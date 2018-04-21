@@ -7,8 +7,11 @@
     "test": "jest"
   },
   "dependencies": {
+    "nachos-ui": "^0.1.2",
+    "native-base": "^2.4.2",
     "react": "16.3.1",
-    "react-native": "0.55.3"
+    "react-native": "0.55.3",
+    "react-native-elements": "^0.19.1"
   },
   "devDependencies": {
     "babel-jest": "22.4.3",
