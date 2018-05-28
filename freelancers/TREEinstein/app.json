@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "TRE Einstein",
+    "description": "Aplicativo Educacional",
+    "icon": "./assets/images/app-icon.png",
+    "version": "1.0.0",
+    "ios": {
+      "bundleIdentifier": "br.com.fabianolothor.treeinstein"
+    },
+    "android": {
+      "package": "br.com.fabianolothor.treeinstein"
+    },
+    "sdkVersion": "27.0.0"
+  }
+}
