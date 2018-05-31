@@ -18,7 +18,7 @@ const questions = [{
     { correct: false, option: 'Luis Inácio Lula da Silva' },
     { correct: false, option: 'Cristovão Colombo' },
   ],
-  question: 'No jogo da autoaprendizagem, você deve marcar a alternativa correta. Por exemplo:<br /><br />Quem descobriu o Brasil?',
+  question: 'No jogo da autoaprendizagem, você deve escolher a alternativa correta, por exemplo:\n\nQuem descobriu o Brasil?',
 },
 {
   options: [
@@ -248,7 +248,6 @@ export default class App extends React.Component {
           </View >
         );
       case 'Game3':
-        console.log(this.state.questionOrder, questions, this.state.actualQuestion);
         return (
           <View style={styles.screen}>
             <View style={styles.header}>
@@ -265,46 +264,17 @@ export default class App extends React.Component {
               </View>
             </View>
             <View style={styles.content}>
-              <WebView
-                source={{
-                  html:
-                    "<p style='font-size: 16; text-align: justify;'>" + (
-                      this.state.actualQuestion === 0 ?
-                        questions[0].question
-                        : questions[this.state.questionOrder[this.state.actualQuestion - 1]].question
-                    ) + "</p>"
-                }}
-                style={styles.contentQuestions}
-              />
               <ScrollView style={styles.contentScroll} >
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
+                <Text style={styles.textFeatured}>
+                  {
+                    this.state.actualQuestion === 0 ?
+                      questions[0].question
+                      : questions[this.state.actualQuestion].question
+                    //: questions[this.state.questionOrder[this.state.actualQuestion]].question
+                  }
+                </Text>
               </ScrollView>
-            </View >
+            </View>
             <View style={styles.footer}>
               {
                 this.state.actualQuestion > 0 && this.state.actualQuestion < questions.length ?
@@ -417,7 +387,7 @@ export default class App extends React.Component {
       case 'Game3':
         this.setState({ actualQuestion: 0 });
         this.setState({ currentPoints: 0 });
-        this.setState({ questionOrder: ([...Array(questions.length).keys()].slice(1)).sort(() => Math.random() - 0.5) });
+        this.setState({ questionOrder: ([...Array(questions.length + 1).keys()].slice(1)).sort(() => Math.random() - 0.5) });
         break;
       default:
         break;
@@ -470,21 +440,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '90%',
   },
-  contentQuestions: {
-    marginBottom: '1%',
-    marginTop: '2%',
-    maxHeight: '25%',
-    maxWidth: '100%',
-    minHeight: '25%',
-    minWidth: '100%',
-  },
   contentScroll: {
-    marginBottom: '2%',
-    marginTop: '1%',
-    maxHeight: '69%',
-    maxWidth: '100%',
-    minHeight: '69%',
     minWidth: '100%',
+    marginTop: '2%',
+    marginBottom: '2%',
   },
   footer: {
     alignItems: 'center',
@@ -533,6 +492,10 @@ const styles = StyleSheet.create({
   textDefault: {
     color: '#FFFFFF',
     fontSize: 24,
+    fontWeight: 'bold',
+  },
+  textFeatured: {
+    fontSize: 16,
     fontWeight: 'bold',
   },
   userPicture: {
