@@ -1,7 +1,7 @@
 import { DangerZone, Font, ImagePicker } from 'expo';
 import { Button, Input, Item } from 'native-base';
 import React from 'react';
-import { Alert, AsyncStorage, BackHandler, Image, ScrollView, StatusBar, StyleSheet, Text, TouchableHighlight, View, WebView } from 'react-native';
+import { Alert, AsyncStorage, BackHandler, Dimensions, Image, ScrollView, StatusBar, StyleSheet, Text, TouchableHighlight, View, WebView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import rocketAnimation from './assets/lotties/bms-rocket.json';
@@ -264,7 +264,7 @@ export default class App extends React.Component {
                 </TouchableHighlight>
               </View>
             </View>
-            <View style={styles.content}>
+            <View style={styles.contentFull}>
               <WebView
                 source={{
                   html:
@@ -277,31 +277,6 @@ export default class App extends React.Component {
                 style={styles.contentQuestions}
               />
               <ScrollView style={styles.contentScroll} >
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
-                <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
                 <Text style={[{ color: '#000000' }]}>Autoaprendizagem</Text>
               </ScrollView>
             </View >
@@ -443,10 +418,10 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#78CBF5',
-    height: 50,
+    height: 42,
   },
   buttonDisabled: {
-    height: 50,
+    height: 42,
     width: '100%',
   },
   twoButtonsLeft: {
@@ -470,33 +445,44 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '90%',
   },
+  contentFull: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    width: '100%',
+  },
   contentQuestions: {
+    backgroundColor: '#FF0000',
+    minHeight: 0.25 * ((Dimensions.get('window').height) - ((Dimensions.get('window').height * 0.6) + 105)),
+    maxHeight: 0.25 * ((Dimensions.get('window').height) - ((Dimensions.get('window').height * 0.6) + 105)),
     marginBottom: '1%',
     marginTop: '2%',
-    maxHeight: '25%',
     maxWidth: '100%',
-    minHeight: '25%',
     minWidth: '100%',
+    paddingLeft: '5%',
+    paddingRight: '5%',
   },
   contentScroll: {
     marginBottom: '2%',
     marginTop: '1%',
-    maxHeight: '69%',
+    maxHeight: 0,
     maxWidth: '100%',
-    minHeight: '69%',
+    minHeight: 0,
     minWidth: '100%',
+    paddingLeft: '4%',
+    paddingRight: '4%',
   },
   footer: {
     alignItems: 'center',
     flexWrap: 'wrap',
     flexDirection: 'column',
-    height: 75,
+    height: 55,
     width: '90%',
   },
   header: {
     alignItems: 'center',
     backgroundColor: '#FA7447',
-    height: 75,
+    height: 50,
     justifyContent: 'center',
     width: '100%',
   },
@@ -532,7 +518,7 @@ const styles = StyleSheet.create({
   },
   textDefault: {
     color: '#FFFFFF',
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
   },
   userPicture: {
