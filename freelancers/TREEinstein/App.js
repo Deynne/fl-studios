@@ -1,19 +1,29 @@
 import { DangerZone, Font, ImagePicker } from "expo";
-import { Body, Button, CheckBox, Input, Item, ListItem } from "native-base";
+import {
+  Badge,
+  Body,
+  Button,
+  CheckBox,
+  Input,
+  Item,
+  ListItem
+} from "native-base";
 import React from "react";
 import {
   Alert,
+  Animated,
   AsyncStorage,
   BackHandler,
-  Dimensions,
   Image,
   ScrollView,
   StatusBar,
   StyleSheet,
+  PanResponder,
   Text,
   TouchableHighlight,
-  View,
-  WebView
+  TouchableWithoutFeedback,
+  Vibration,
+  View
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -35,12 +45,18 @@ export default class App extends React.Component {
     super(props);
 
     this.state = {
+      actualParagraph: null,
       actualQuestion: 0,
+      actualTerm: "",
+      actualTheme: null,
       animationRocket: null,
       animationStar: null,
       answers: [...Array(questions.length)],
       currentPoints: 0,
+      draggablePosition: { x: 0, y: 0 },
+      draggableVisible: false,
       fontLoaded: false,
+      pan: new Animated.ValueXY(),
       questionOrder: Array.from(
         new Array(questions.length - 1),
         (v, i) => i + 1
@@ -67,6 +83,32 @@ export default class App extends React.Component {
 
     BackHandler.addEventListener("hardwareBackPress", () => {
       return this.backHandler();
+    });
+  };
+
+  componentWillMount = () => {
+    this.state.pan.addListener(value => {
+      this.setState({ draggablePosition: value });
+    });
+
+    this.panResponder = PanResponder.create({
+      onStartShouldSetPanResponder: (e, gesture) => true,
+      onPanResponderGrant: (e, gesture) => {
+        this.state.pan.setOffset({
+          x: this.state.draggablePosition.x,
+          y: this.state.draggablePosition.y
+        });
+
+        this.state.pan.setValue({ x: 0, y: 0 });
+      },
+      onPanResponderMove: Animated.event([
+        null,
+        { dx: this.state.pan.x, dy: this.state.pan.y }
+      ]),
+      onPanResponderRelease: (e, gesture) => {
+        this.setState({ actualTerm: "" });
+        this.setState({ draggableVisible: false });
+      }
     });
   };
 
@@ -123,6 +165,7 @@ export default class App extends React.Component {
       case "Menu":
         this.updateScreen("User");
         return true;
+      case "Game1":
       case "Game3":
         Alert.alert(
           "Voltar",
@@ -271,19 +314,22 @@ export default class App extends React.Component {
             <View style={styles.content}>
               <Button
                 block
-                disabled={true}
-                onPress={() => {}}
-                style={styles.buttonDisabled}
+                onPress={() => {
+                  this.updateScreen("Game1");
+                }}
+                style={[styles.button]}
               >
-                <Text style={styles.textDefault}>Caçador de Palavras</Text>
+                <Text style={styles.textDefault}>Palavra Certa</Text>
               </Button>
               <Button
                 block
                 disabled={true}
-                onPress={() => {}}
-                style={[styles.buttonDisabled, styles.marginTop25]}
+                onPress={() => {
+                  this.updateScreen("Game2");
+                }}
+                style={(styles.buttonDisabled, styles.marginTop25)}
               >
-                <Text style={styles.textDefault}>Palavra Certa</Text>
+                <Text style={styles.textDefault}>Caçador de Palavras</Text>
               </Button>
               <Button
                 block
@@ -294,6 +340,189 @@ export default class App extends React.Component {
               >
                 <Text style={styles.textDefault}>Autoaprendizagem</Text>
               </Button>
+            </View>
+          </View>
+        );
+      case "Game1":
+        return (
+          <View style={styles.screen}>
+            {this.state.draggableVisible ? (
+              <Animated.View
+                {...this.panResponder.panHandlers}
+                style={[
+                  {
+                    position: "absolute",
+                    //transform: this.state.pan.getTranslateTransform(),
+                    left: this.state.draggablePosition.x,
+                    top: this.state.draggablePosition.y,
+                    zIndex: 1
+                  }
+                ]}
+              >
+                <Badge style={styles.badgeSelected}>
+                  <Text style={styles.badgeText}>{this.state.actualTerm}</Text>
+                </Badge>
+              </Animated.View>
+            ) : null}
+            <View style={styles.header}>
+              <View style={styles.headerContent}>
+                <Text style={styles.textDefault}>
+                  {this.state.actualParagraph === null
+                    ? "Instruções"
+                    : this.state.actualParagraph === 0
+                      ? "Escolha um Tema"
+                      : themes[this.state.actualTheme].name}
+                </Text>
+                <TouchableHighlight
+                  style={styles.headerOption}
+                  onPress={() => {
+                    this.backHandler();
+                  }}
+                >
+                  <Ionicons name="md-menu" style={[styles.textDefault]} />
+                </TouchableHighlight>
+              </View>
+            </View>
+            <View style={styles.contentFull}>
+              {this.state.actualParagraph === null ? (
+                <View>
+                  <ScrollView
+                    ref={scroller => {
+                      this.scroller = scroller;
+                    }}
+                    onContentSizeChange={(w, h) => {
+                      this.scroller.scrollTo({ x: 0, y: 0 });
+                    }}
+                    style={styles.contentScroll}
+                  >
+                    <Text style={styles.textParagraph}>
+                      No jogo da Palavra Certa, você deve arrastar os termos
+                      disponíveis para suas posições corretas, até que o
+                      parágrafo esteja completamente preenchido. Toque e segure
+                      os termos disponíveis na parte inferior da tela para que
+                      eles possam ser movidos para o local indicado.
+                    </Text>
+                  </ScrollView>
+                  <ScrollView
+                    horizontal
+                    ref={scroller => {
+                      this.scroller = scroller;
+                    }}
+                    onContentSizeChange={(w, h) => {
+                      this.scroller.scrollTo({ x: 0, y: 0 });
+                    }}
+                    style={styles.contentScrollTerms}
+                  >
+                    {this.getTerm("parágrafo")}
+                    {this.getTerm("movidos")}
+                    {this.getTerm("Palavra Certa")}
+                    {this.getTerm("termos")}
+                  </ScrollView>
+                </View>
+              ) : this.state.actualParagraph === 0 ? (
+                <View style={styles.content}>
+                  {themes.map((i, k) => {
+                    return (
+                      <Button
+                        block
+                        key={k}
+                        onPress={() => {
+                          this.setState({ actualTheme: k });
+                          this.setState(previousState => {
+                            return {
+                              actualParagraph: ++previousState.actualParagraph
+                            };
+                          });
+                        }}
+                        style={[
+                          styles.button,
+                          k > 0 ? styles.marginTop25 : null
+                        ]}
+                      >
+                        <Text style={styles.textDefault}>{i.name}</Text>
+                      </Button>
+                    );
+                  })}
+                </View>
+              ) : (
+                <ScrollView
+                  ref={scroller => {
+                    this.scroller = scroller;
+                  }}
+                  onContentSizeChange={(w, h) => {
+                    this.scroller.scrollTo({ x: 0, y: 0 });
+                  }}
+                  style={styles.contentScroll}
+                >
+                  <Text>tmp</Text>
+                </ScrollView>
+              )}
+            </View>
+            <View style={styles.footer}>
+              {this.state.actualParagraph !== null ? (
+                <Button
+                  block
+                  onPress={() => {
+                    this.setState(previousState => {
+                      return {
+                        actualParagraph:
+                          previousState.actualParagraph === 0
+                            ? null
+                            : --previousState.actualParagraph
+                      };
+                    });
+                  }}
+                  style={[
+                    styles.button,
+                    this.state.actualParagraph > 0
+                      ? styles.twoButtonsRight
+                      : null
+                  ]}
+                >
+                  <Ionicons name="ios-arrow-back" style={styles.textDefault} />
+                  <Ionicons name="ios-arrow-back" style={styles.textDefault} />
+                </Button>
+              ) : null}
+              {this.state.actualParagraph !== 0 ? (
+                <Button
+                  block
+                  disabled={false}
+                  onPress={
+                    this.state.actualParagraph === null
+                      ? () => {
+                          this.setState({ actualParagraph: 0 });
+                        }
+                      : () => {
+                          this.setState(previousState => {
+                            return {
+                              actualParagraph: ++previousState.actualParagraph
+                            };
+                          });
+                        }
+                  }
+                  style={[
+                    styles.button,
+                    this.state.actualParagraph > 0
+                      ? styles.twoButtonsLeft
+                      : null
+                  ]}
+                >
+                  {this.state.actualParagraph > 4 ? (
+                    <Ionicons name="md-done-all" style={styles.textDefault} />
+                  ) : (
+                    <View style={{ flexDirection: "row" }}>
+                      <Ionicons
+                        name="ios-arrow-forward"
+                        style={styles.textDefault}
+                      />
+                      <Ionicons
+                        name="ios-arrow-forward"
+                        style={styles.textDefault}
+                      />
+                    </View>
+                  )}
+                </Button>
+              ) : null}
             </View>
           </View>
         );
@@ -322,9 +551,9 @@ export default class App extends React.Component {
                 ref={scroller => {
                   this.scroller = scroller;
                 }}
-                onContentSizeChange={(w, h)=>{
+                onContentSizeChange={(w, h) => {
                   this.scroller.scrollTo({ x: 0, y: 0 });
-              }}
+                }}
                 style={styles.contentScroll}
               >
                 <View style={styles.contentQuestions}>
@@ -515,6 +744,28 @@ export default class App extends React.Component {
     }
   };
 
+  getTerm = term => {
+    return this.state.actualTerm !== term ? (
+      <TouchableWithoutFeedback
+        onPress={e => {
+          console.log(e);
+          this.setState({
+            draggablePosition: {
+              x: e.nativeEvent.pageX,
+              y: e.nativeEvent.pageY - 60
+            }
+          });
+
+          this.selectTerm(term);
+        }}
+      >
+        <Badge style={styles.badge}>
+          <Text style={styles.badgeText}>{term}</Text>
+        </Badge>
+      </TouchableWithoutFeedback>
+    ) : null;
+  };
+
   pickUserPicture = async () => {
     this.setState({ userPicture: null });
 
@@ -573,11 +824,17 @@ export default class App extends React.Component {
     });
   };
 
+  selectTerm = term => {
+    Vibration.vibrate(100);
+    this.setState({ draggableVisible: true });
+    this.setState({ actualTerm: term });
+  };
+
   ticker = () => {
     setTimeout(() => {
       if (this.state.fontLoaded) {
         if (this.state.timer === splashTimer) {
-          this.updateScreen("Start");
+          this.updateScreen("Menu");
         }
 
         this.setState(previousState => {
@@ -612,6 +869,11 @@ export default class App extends React.Component {
         break;
       case "Menu":
         this.loadDBKeys();
+        break;
+      case "Game1":
+        this.setState({ actualParagraph: null });
+        this.setState({ actualTheme: null });
+        this.setState({ currentPoints: 0 });
         break;
       case "Game3":
         this.setState({ actualQuestion: 0 });
@@ -653,6 +915,20 @@ const styles = StyleSheet.create({
     color: "#D2A253",
     fontFamily: "Skarparegular",
     fontSize: 72
+  },
+  badge: {
+    backgroundColor: "#FA7447",
+    margin: 5
+  },
+  badgeSelected: {
+    backgroundColor: "#000000",
+    margin: 5
+  },
+  badgeText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    padding: 2,
+    fontWeight: "bold"
   },
   breakLine: {
     marginTop: "1%",
@@ -706,11 +982,19 @@ const styles = StyleSheet.create({
     paddingLeft: "4%",
     paddingRight: "4%"
   },
+  contentScrollTerms: {
+    marginTop: "2%",
+    marginBottom: "2%",
+    maxHeight: 50,
+    minWidth: "100%",
+    paddingLeft: "4%",
+    paddingRight: "4%"
+  },
   footer: {
     alignItems: "center",
     flexWrap: "wrap",
     flexDirection: "column",
-    height: 75,
+    height: 60,
     width: "90%"
   },
   header: {
@@ -774,6 +1058,9 @@ const styles = StyleSheet.create({
     fontSize: 40,
     fontWeight: "bold"
   },
+  textParagraph: {
+    fontSize: 20
+  },
   textQuestion: {
     fontSize: 18
   },
@@ -799,6 +1086,8 @@ const styles = StyleSheet.create({
     width: 64
   }
 });
+
+// Questions
 
 const questions = [
   {
@@ -969,7 +1258,10 @@ const questions = [
           <Text>
             As velocidades em relação a um referencial fixo na Terra são:
           </Text>
-          <Text style={styles.textItalic}> 70km/h, 100km/h, 0,1c </Text>
+          <Text style={styles.textItalic}>
+            {" "}
+            70km&frasl;h, 100km&frasl;h, 0,1c{" "}
+          </Text>
           <Text>para os veículos:</Text>
           <Text style={styles.textItalic}> A, B, D </Text>
           <Text>respectivamente e</Text>
@@ -988,7 +1280,10 @@ const questions = [
           <Text>afastar-se do veículo</Text>
           <Text style={styles.textItalic}> A </Text>
           <Text>é de</Text>
-          <Text style={styles.textItalic}> 30km/h (100km/h – 70km/h)</Text>
+          <Text style={styles.textItalic}>
+            {" "}
+            30km&frasl;h (100km&frasl;h – 70km&frasl;h)
+          </Text>
           <Text>.</Text>
         </Text>
         <Text style={styles.breakLine} />
@@ -1013,7 +1308,7 @@ const questions = [
           <Text>afastar-se do veículo</Text>
           <Text style={styles.textItalic}> A </Text>
           <Text>é de</Text>
-          <Text style={styles.textItalic}> 100km/h</Text>
+          <Text style={styles.textItalic}> 100km&frasl;h</Text>
           <Text>.</Text>
         </Text>
         <Text style={styles.breakLine} />
@@ -1161,5 +1456,18 @@ const questions = [
         </Text>
       </View>
     )
+  }
+];
+
+// Themes
+
+const themes = [
+  {
+    name: "NOME DO TEMA 1",
+    paragraphs: []
+  },
+  {
+    name: "NOME DO TEMA 2",
+    paragraphs: []
   }
 ];
