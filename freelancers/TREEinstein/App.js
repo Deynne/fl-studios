@@ -25,7 +25,7 @@ import {
   Vibration,
   View
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Entypo, Ionicons } from "@expo/vector-icons";
 
 import rocketAnimation from "./assets/lotties/bms-rocket.json";
 import starAnimation from "./assets/lotties/star.json";
@@ -34,6 +34,7 @@ const { Lottie } = DangerZone;
 
 const appName = "TRE Einstein";
 const appIcon = "./assets/images/app-icon.png";
+const blankSpaces = "_";
 const imageQuestion5 = "./assets/images/question-5.png";
 const imageQuestion10 = "./assets/images/question-10.png";
 const markdownLogo = "./assets/images/markdown-logo.jpg";
@@ -47,6 +48,7 @@ export default class App extends React.Component {
     this.state = {
       actualParagraph: null,
       actualQuestion: 0,
+      actualSufix: "",
       actualTerm: "",
       actualTheme: null,
       animationRocket: null,
@@ -56,6 +58,7 @@ export default class App extends React.Component {
       draggablePosition: { x: 0, y: 0 },
       draggableVisible: false,
       fontLoaded: false,
+      instructionsTerms: ["Palavra Certa", "parágrafo", "termos", "movidos"],
       pan: new Animated.ValueXY(),
       questionOrder: Array.from(
         new Array(questions.length - 1),
@@ -63,6 +66,10 @@ export default class App extends React.Component {
       ),
       screen: "Splash",
       signed: false,
+      termLayout: {},
+      termLayoutAll: {},
+      termsOrder: Array.from(new Array(10), (v, i) => i),
+      termsPositions: {},
       timer: 0,
       userName: "",
       userPicture: null
@@ -106,6 +113,34 @@ export default class App extends React.Component {
         { dx: this.state.pan.x, dy: this.state.pan.y }
       ]),
       onPanResponderRelease: (e, gesture) => {
+        if (
+          gesture.moveX >
+            this.state.termsPositions[this.getActualTermWithSufix()].x &&
+          gesture.moveX <
+            this.state.termsPositions[this.getActualTermWithSufix()].x +
+              this.state.termsPositions[this.getActualTermWithSufix()].width &&
+          gesture.moveY >
+            this.state.termsPositions[this.getActualTermWithSufix()].y -
+              this.state.termLayoutAll.yScroller &&
+          gesture.moveY <
+            this.state.termLayoutAll.yContent +
+              this.state.termLayoutAll.yScroll +
+              (this.state.termsPositions[this.getActualTermWithSufix()].y -
+                this.state.termLayoutAll.yScroller) +
+              this.state.termsPositions[this.getActualTermWithSufix()].height &&
+          gesture.moveY >
+            this.state.termLayoutAll.yContent + this.state.termLayoutAll.yScroll
+        ) {
+          this.state.termsPositions[
+            this.getActualTermWithSufix()
+          ].answered = true;
+
+          Vibration.vibrate(100);
+        } else {
+          Vibration.vibrate(500);
+        }
+
+        this.setState({ actualSufix: "" });
         this.setState({ actualTerm: "" });
         this.setState({ draggableVisible: false });
       }
@@ -147,6 +182,28 @@ export default class App extends React.Component {
   };
 
   // Helper Functions
+
+  actualThemeAnswered = () => {
+    return !themes[this.state.actualTheme].paragraphs
+      .map((p, i) => {
+        return p.terms
+          .map(t => {
+            return typeof this.state.termsPositions[
+              t + "_" + this.state.actualTheme + "_" + (i + 1)
+            ] === "undefined"
+              ? false
+              : this.state.termsPositions[
+                  t + "_" + this.state.actualTheme + "_" + (i + 1)
+                ].answered;
+          })
+          .some(v => v === false);
+      })
+      .some(v => v === true);
+  };
+
+  allAnswered = () => {
+    return false;
+  };
 
   backHandler = () => {
     switch (this.state.screen) {
@@ -199,6 +256,10 @@ export default class App extends React.Component {
 
   changeUserName = userName => {
     this.setState({ userName: userName.substring(0, 32) });
+  };
+
+  getActualTermWithSufix = () => {
+    return this.state.actualTerm + this.state.actualSufix;
   };
 
   getScreen = () => {
@@ -373,53 +434,50 @@ export default class App extends React.Component {
                       ? "Escolha um Tema"
                       : themes[this.state.actualTheme].name}
                 </Text>
-                <TouchableHighlight
-                  style={styles.headerOption}
-                  onPress={() => {
-                    this.backHandler();
-                  }}
-                >
-                  <Ionicons name="md-menu" style={[styles.textDefault]} />
-                </TouchableHighlight>
+                <View style={styles.headerOptions}>
+                  {this.state.actualParagraph > 0 ? (
+                    <TouchableHighlight
+                      style={styles.headerOption}
+                      onPress={() => {
+                        Alert.alert(
+                          "Desistir",
+                          "Tem certeza que deseja desistir do jogo e retornar para a tela de seleção de temas?\n\nSeu progresso será perdido.",
+                          [
+                            { text: "NÃO" },
+                            {
+                              text: "SIM",
+                              onPress: () => {
+                                this.updateScreen("Game1");
+
+                                this.setState({ actualParagraph: 0 });
+                              }
+                            }
+                          ],
+                          { cancelable: true }
+                        );
+                      }}
+                    >
+                      <Entypo name="flag" style={[styles.textDefault]} />
+                    </TouchableHighlight>
+                  ) : null}
+                  <TouchableHighlight
+                    style={styles.headerOption}
+                    onPress={() => {
+                      this.backHandler();
+                    }}
+                  >
+                    <Ionicons name="md-menu" style={[styles.textDefault]} />
+                  </TouchableHighlight>
+                </View>
               </View>
             </View>
-            <View style={styles.contentFull}>
-              {this.state.actualParagraph === null ? (
-                <View>
-                  <ScrollView
-                    ref={scroller => {
-                      this.scroller = scroller;
-                    }}
-                    onContentSizeChange={(w, h) => {
-                      this.scroller.scrollTo({ x: 0, y: 0 });
-                    }}
-                    style={styles.contentScroll}
-                  >
-                    <Text style={styles.textParagraph}>
-                      No jogo da Palavra Certa, você deve arrastar os termos
-                      disponíveis para suas posições corretas, até que o
-                      parágrafo esteja completamente preenchido. Toque e segure
-                      os termos disponíveis na parte inferior da tela para que
-                      eles possam ser movidos para o local indicado.
-                    </Text>
-                  </ScrollView>
-                  <ScrollView
-                    horizontal
-                    ref={scroller => {
-                      this.scroller = scroller;
-                    }}
-                    onContentSizeChange={(w, h) => {
-                      this.scroller.scrollTo({ x: 0, y: 0 });
-                    }}
-                    style={styles.contentScrollTerms}
-                  >
-                    {this.getTerm("parágrafo")}
-                    {this.getTerm("movidos")}
-                    {this.getTerm("Palavra Certa")}
-                    {this.getTerm("termos")}
-                  </ScrollView>
-                </View>
-              ) : this.state.actualParagraph === 0 ? (
+            <View
+              onLayout={e => {
+                this.state.termLayoutAll["yContent"] = e.nativeEvent.layout.y;
+              }}
+              style={styles.contentFull}
+            >
+              {this.state.actualParagraph === 0 ? (
                 <View style={styles.content}>
                   {themes.map((i, k) => {
                     return (
@@ -433,6 +491,10 @@ export default class App extends React.Component {
                               actualParagraph: ++previousState.actualParagraph
                             };
                           });
+
+                          this.setState({ actualSufix: "" });
+                          this.setState({ actualTerm: "" });
+                          this.setState({ draggableVisible: false });
                         }}
                         style={[
                           styles.button,
@@ -445,21 +507,110 @@ export default class App extends React.Component {
                   })}
                 </View>
               ) : (
-                <ScrollView
-                  ref={scroller => {
-                    this.scroller = scroller;
-                  }}
-                  onContentSizeChange={(w, h) => {
-                    this.scroller.scrollTo({ x: 0, y: 0 });
-                  }}
-                  style={styles.contentScroll}
-                >
-                  <Text>tmp</Text>
-                </ScrollView>
+                <View>
+                  <ScrollView
+                    ref={scroller => {
+                      this.scroller = scroller;
+                    }}
+                    onContentSizeChange={(w, h) => {
+                      this.scroller.scrollTo({ x: 0, y: 0 });
+                    }}
+                    onLayout={e => {
+                      this.state.termLayoutAll["width"] =
+                        e.nativeEvent.layout.width;
+                      this.state.termLayoutAll["y"] =
+                        e.nativeEvent.layout.y + e.nativeEvent.layout.height;
+                      this.state.termLayoutAll["yScroll"] =
+                        e.nativeEvent.layout.y;
+                      this.state.termLayoutAll["yScroller"] = 0;
+                    }}
+                    onScroll={e => {
+                      this.state.termLayoutAll["yScroller"] =
+                        e.nativeEvent.contentOffset.y;
+                    }}
+                    style={styles.contentScroll}
+                  >
+                    {this.state.actualParagraph === null ? (
+                      <View style={styles.paragraphs}>
+                        {this.splitPhrase("No jogo da")}
+                        {this.getTermText("Palavra Certa", "_instruções")}
+                        {this.splitPhrase(
+                          "você deve arrastar os termos disponíveis para suas posições corretas, até que o"
+                        )}
+                        {this.getTermText("parágrafo", "_instruções")}
+                        {this.splitPhrase(
+                          "esteja completamente preenchido. Escolha um dos"
+                        )}
+                        {this.getTermText("termos", "_instruções")}
+                        {this.splitPhrase(
+                          "listados na parte inferior da tela para que eles possam ser"
+                        )}
+                        {this.getTermText("movidos", "_instruções")}
+                        {this.splitPhrase("para o local indicado.")}
+                      </View>
+                    ) : (
+                      <View style={styles.paragraphs}>
+                        {themes[this.state.actualTheme].paragraphs[
+                          this.state.actualParagraph - 1
+                        ].content.map((i, k) => {
+                          return typeof themes[this.state.actualTheme]
+                            .paragraphs[this.state.actualParagraph - 1].terms[
+                            k
+                          ] === "undefined"
+                            ? this.splitPhrase(i)
+                            : [
+                                this.splitPhrase(i),
+                                this.getTermText(
+                                  themes[this.state.actualTheme].paragraphs[
+                                    this.state.actualParagraph - 1
+                                  ].terms[k],
+                                  "_" +
+                                    this.state.actualTheme +
+                                    "_" +
+                                    this.state.actualParagraph
+                                )
+                              ];
+                        })}
+                      </View>
+                    )}
+                  </ScrollView>
+                  <ScrollView
+                    horizontal
+                    ref={scroller => {
+                      this.scroller = scroller;
+                    }}
+                    onContentSizeChange={(w, h) => {
+                      this.scroller.scrollTo({ x: 0, y: 0 });
+                    }}
+                    style={styles.contentScrollTerms}
+                  >
+                    {this.state.actualParagraph === null
+                      ? this.state.instructionsTerms.map(i => {
+                          return this.getTerm(i, "_instruções");
+                        })
+                      : this.state.termsOrder.map(i => {
+                          return typeof themes[this.state.actualTheme]
+                            .paragraphs[this.state.actualParagraph - 1].terms[
+                            parseInt(i)
+                          ] === "undefined"
+                            ? null
+                            : this.getTerm(
+                                themes[this.state.actualTheme].paragraphs[
+                                  this.state.actualParagraph - 1
+                                ].terms[parseInt(i)],
+                                "_" +
+                                  this.state.actualTheme +
+                                  "_" +
+                                  this.state.actualParagraph
+                              );
+                        })}
+                  </ScrollView>
+                </View>
               )}
             </View>
             <View style={styles.footer}>
-              {this.state.actualParagraph !== null ? (
+              {this.state.actualParagraph !== null &&
+              this.state.actualParagraph !== 1 ? (
                 <Button
                   block
                   onPress={() => {
@@ -471,6 +622,10 @@ export default class App extends React.Component {
                             : --previousState.actualParagraph
                       };
                     });
+
+                    this.setState({ actualSufix: "" });
+                    this.setState({ actualTerm: "" });
+                    this.setState({ draggableVisible: false });
                   }}
                   style={[
                     styles.button,
@@ -486,28 +641,54 @@ export default class App extends React.Component {
               {this.state.actualParagraph !== 0 ? (
                 <Button
                   block
-                  disabled={false}
+                  disabled={
+                    this.state.actualTheme !== null &&
+                    this.state.actualParagraph ===
+                      themes[this.state.actualTheme].paragraphs.length &&
+                    !this.actualThemeAnswered()
+                  }
                   onPress={
                     this.state.actualParagraph === null
                       ? () => {
                           this.setState({ actualParagraph: 0 });
+                          this.setState({ actualSufix: "" });
+                          this.setState({ actualTerm: "" });
+                          this.setState({ draggableVisible: false });
                         }
-                      : () => {
-                          this.setState(previousState => {
-                            return {
-                              actualParagraph: ++previousState.actualParagraph
-                            };
-                          });
-                        }
+                      : this.state.actualTheme !== null &&
+                        this.state.actualParagraph ===
+                          themes[this.state.actualTheme].paragraphs.length
+                        ? () => {
+                            // END GAME
+                          }
+                        : () => {
+                            this.setState(previousState => {
+                              return {
+                                actualParagraph: ++previousState.actualParagraph
+                              };
+                            });
+
+                            this.setState({ actualSufix: "" });
+                            this.setState({ actualTerm: "" });
+                            this.setState({ draggableVisible: false });
+                          }
                   }
                   style={[
-                    styles.button,
-                    this.state.actualParagraph > 0
+                    this.state.actualTheme !== null &&
+                    this.state.actualParagraph ===
+                      themes[this.state.actualTheme].paragraphs.length
+                      ? this.actualThemeAnswered()
+                        ? styles.button
+                        : styles.buttonDisabled
+                      : styles.button,
+                    this.state.actualParagraph > 1
                       ? styles.twoButtonsLeft
                       : null
                   ]}
                 >
-                  {this.state.actualParagraph > 4 ? (
+                  {this.state.actualTheme !== null &&
+                  this.state.actualParagraph ===
+                    themes[this.state.actualTheme].paragraphs.length ? (
                     <Ionicons name="md-done-all" style={styles.textDefault} />
                   ) : (
                     <View style={{ flexDirection: "row" }}>
@@ -744,19 +925,21 @@ export default class App extends React.Component {
     }
   };
 
-  getTerm = term => {
-    return this.state.actualTerm !== term ? (
+  getTerm = (term, sufix = "") => {
+    return this.state.actualTerm !== term &&
+      !this.termAnswered(term + sufix) ? (
       <TouchableWithoutFeedback
+        key={term + sufix}
+        onLayout={e => {
+          this.state.termLayout[term + sufix] = {
+            width: e.nativeEvent.layout.width
+          };
+        }}
         onPress={e => {
-          console.log(e);
-          this.setState({
-            draggablePosition: {
-              x: e.nativeEvent.pageX,
-              y: e.nativeEvent.pageY - 60
-            }
-          });
-
-          this.selectTerm(term);
+          this.selectTerm(term, sufix);
+        }}
+        onLongPress={e => {
+          this.selectTerm(term, sufix);
         }}
       >
         <Badge style={styles.badge}>
@@ -764,6 +947,31 @@ export default class App extends React.Component {
         </Badge>
       </TouchableWithoutFeedback>
     ) : null;
+  };
+
+  getTermText = (term, sufix = "") => {
+    return !this.termAnswered(term, sufix) ? (
+      <Text
+        key={term + sufix}
+        onLayout={e => {
+          this.state.termsPositions[term + sufix] = {
+            answered: this.termAnswered(term, sufix),
+            height: e.nativeEvent.layout.height,
+            width: e.nativeEvent.layout.width,
+            x: e.nativeEvent.layout.x,
+            y: e.nativeEvent.layout.y
+          };
+        }}
+        style={styles.textTerm}
+      >
+        {
+          "_ _ _ _ _ _ _"
+          //term.replace(/./g, blankSpaces)
+        }
+      </Text>
+    ) : (
+      this.splitPhrase(term, true)
+    );
   };
 
   pickUserPicture = async () => {
@@ -824,10 +1032,38 @@ export default class App extends React.Component {
     });
   };
 
-  selectTerm = term => {
+  selectTerm = (term, sufix = "") => {
     Vibration.vibrate(100);
-    this.setState({ draggableVisible: true });
+
+    this.setState({
+      draggablePosition: {
+        x:
+          this.state.termLayoutAll.width / 2 -
+          this.state.termLayout[term + sufix].width / 2,
+        y: this.state.termLayoutAll.y + 50
+      }
+    });
+
+    this.setState({ actualSufix: sufix });
     this.setState({ actualTerm: term });
+    this.setState({ draggableVisible: true });
+  };
+
+  splitPhrase = (phrase, isTerm = false) => {
+    let words = phrase.split(" ");
+    return words.map((i, k) => {
+      return (
+        <Text key={k} style={isTerm ? styles.textTerm : styles.textParagraph}>
+          {i}
+        </Text>
+      );
+    });
+  };
+
+  termAnswered = (term, sufix = "") => {
+    return typeof this.state.termsPositions[term + sufix] === "undefined"
+      ? false
+      : this.state.termsPositions[term + sufix].answered;
   };
 
   ticker = () => {
@@ -872,8 +1108,24 @@ export default class App extends React.Component {
         break;
       case "Game1":
         this.setState({ actualParagraph: null });
+        this.setState({ actualSufix: "" });
+        this.setState({ actualTerm: "" });
         this.setState({ actualTheme: null });
         this.setState({ currentPoints: 0 });
+        this.setState({ draggableVisible: false });
+        this.setState({
+          termsPositions: this.state.instructionsTerms.sort(
+            () => Math.random() - 0.5
+          )
+        });
+        this.setState({ termLayout: {} });
+        this.setState({ termLayoutAll: {} });
+        this.setState(previousState => {
+          return {
+            termsOrder: previousState.termsOrder.sort(() => Math.random() - 0.5)
+          };
+        });
+        this.setState({ termsPositions: {} });
         break;
       case "Game3":
         this.setState({ actualQuestion: 0 });
@@ -978,17 +1230,15 @@ const styles = StyleSheet.create({
   contentScroll: {
     marginTop: "2%",
     marginBottom: "2%",
+    height: "100%",
     minWidth: "100%",
     paddingLeft: "4%",
     paddingRight: "4%"
   },
   contentScrollTerms: {
-    marginTop: "2%",
     marginBottom: "2%",
-    maxHeight: 50,
-    minWidth: "100%",
-    paddingLeft: "4%",
-    paddingRight: "4%"
+    minHeight: 35,
+    minWidth: "100%"
   },
   footer: {
     alignItems: "center",
@@ -1013,7 +1263,14 @@ const styles = StyleSheet.create({
   },
   headerOption: {
     height: "100%",
-    justifyContent: "center"
+    justifyContent: "center",
+    marginLeft: 15
+  },
+  headerOptions: {
+    alignItems: "flex-end",
+    flexDirection: "row",
+    height: "100%",
+    justifyContent: "space-between"
   },
   imageQuestion: {
     resizeMode: "contain",
@@ -1036,6 +1293,11 @@ const styles = StyleSheet.create({
     opacity: 0.025,
     position: "absolute"
   },
+  paragraphs: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    minWidth: "100%"
+  },
   points: {
     alignItems: "center",
     justifyContent: "center",
@@ -1053,13 +1315,19 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold"
   },
+  textItalic: {
+    fontSize: 18,
+    fontStyle: "italic"
+  },
   textPoints: {
     color: "#FFFFFF",
     fontSize: 40,
     fontWeight: "bold"
   },
   textParagraph: {
-    fontSize: 20
+    fontSize: 20,
+    marginLeft: 2,
+    marginRight: 2
   },
   textQuestion: {
     fontSize: 18
@@ -1068,9 +1336,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold"
   },
-  textItalic: {
-    fontSize: 18,
-    fontStyle: "italic"
+  textTerm: {
+    color: "#FA7447",
+    fontSize: 20,
+    fontWeight: "bold",
+    marginLeft: 2,
+    marginRight: 2
   },
   userPicture: {
     borderRadius: 64,
@@ -1463,11 +1734,142 @@ const questions = [
 
 const themes = [
   {
-    name: "NOME DO TEMA 1",
-    paragraphs: []
+    name: "Luz e Interferômetro",
+    paragraphs: [
+      {
+        content: [
+          "Seja no campo da filosofia ou no cientifico-experimental, o conceito e a natureza da luz inquietam o homem. Galileu (1564-1642) físico",
+          ", que viveu entre os séculos XVI e XVII, propôs um experimento conhecido como",
+          ", o objetivo era observar se a velocidade da luz era instantânea ou não, assim verificar se a luz tinha velocidade",
+          "ou",
+          ". Todavia não há relatos acerca de qual resultado obteve, nem a veracidade desse experimento, é fato que Galileu entendia ter a luz uma velocidade muito",
+          ", comparada à velocidade do som vinda com os trovões durante uma tempestade."
+        ],
+        terms: [
+          "italiano",
+          "“experimento das lanternas”",
+          "finita",
+          "infinita",
+          "elevada"
+        ]
+      },
+      {
+        content: [
+          "Newton (1642-1727) físico",
+          ", acreditava que a velocidade da luz era",
+          "e variava sua intensidade de acordo com o meio de propagação, semelhante à variação da velocidade do som, ou seja, em um meio mais denso como a água por exemplo, a luz tinha velocidade",
+          ", que aquela apresentada no o ar. Fermat (1601-1665) advogado e matemático",
+          ", afirmava o oposto. – A velocidade da luz é",
+          "na água quando comparada à velocidade no ar. Dizia ele."
+        ],
+        terms: ["inglês", "finita", "maior", "francês", "menor"]
+      },
+      {
+        content: [
+          "Newton também divergia de outros físicos, quanto a natureza da luz. Para Newton, a luz tinha natureza",
+          ", enquanto para Huygens (1629-1695) físico e matemático",
+          ", a luz tinha comportamento",
+          ". Atualmente é consenso que a luz tem comportamento",
+          ", ora de onda, ora de partícula é a conhecida dualidade",
+          "."
+        ],
+        terms: [
+          "corpuscular",
+          "holandês",
+          "ondulatório",
+          "dual",
+          "onda-partícula"
+        ]
+      },
+      {
+        content: [
+          "Em 1887 o",
+          "de Michelson, mais sensível e estável que o da primeira versão de 1880, comprovou de forma irrefutável a não existência do",
+          "e várias consequências vieram com essa comprovação, a mais importante foi a constância da velocidade da",
+          ". A ",
+          "do comprimento de Fitzgerald (1851-1901), foi uma tentativa de explicar os resultados negativos do experimento de",
+          "afim de garantir a",
+          "do éter. Uma vez constante a velocidade da luz no vácuo para qualquer",
+          ", a relatividade Galileana apresentava",
+          ", sendo necessário a criação de uma nova",
+          "que enquadrasse todos as consequências da constância de c."
+        ],
+        terms: [
+          "interferômetro",
+          "éter",
+          "luz",
+          "contração",
+          "Michelson e Morley",
+          "existência",
+          "referencial inercial",
+          "falhas",
+          "teoria da relatividade"
+        ]
+      }
+    ]
   },
   {
-    name: "NOME DO TEMA 2",
-    paragraphs: []
+    name: "Os Postulados da TRE",
+    paragraphs: [
+      {
+        content: [
+          "Einstein (1879-1955) físico",
+          ", publica em 1905 o seu mais conhecido trabalho, nascera ali a teoria que revolucionaria o conceito de espaço e tempo que se tinha até então. A",
+          "(TRE) se apoia em dois postulados, o primeiro afirma que as “leis da física são as mesmas em qualquer sistema de referência ",
+          "” e o segundo “A velocidade c da luz no vácuo, é sempre a",
+          "em qualquer sistema de referência inercial e não depende da velocidade da fonte”, esse segundo é conhecido como o princípio da",
+          "da velocidade da luz."
+        ],
+        terms: [
+          "alemão",
+          "Teoria da Reatividade Especial",
+          "inercial",
+          "mesma",
+          "constância"
+        ]
+      },
+      {
+        content: [
+          "Um fato curioso, consequência dos desdobramentos dos postulados da TER, é o da “relatividade da simultaneidade”, segundo esse princípio: Se dois eventos ocorrem em um mesmo instante num dado",
+          ", dizemos que eles são",
+          "nesse referencial. Todavia, esses mesmos eventos",
+          "necessariamente simultâneos em outros referenciais, em outras palavras, o tempo é uma quantidade",
+          "e não",
+          "como se pensava Newton. Com a ideia de tempo relativo, surge uma nova definição ligada a esse fato, o de tempo próprio, que é aquele intervalo de tempo médio pelo relógio pertencente ao",
+          "onde ocorre o evento, essa relatividade temporal é conhecida como",
+          "."
+        ],
+        terms: [
+          "referencial",
+          "simultâneos",
+          "não serão",
+          "relativa",
+          "absoluta",
+          "mesmo referencial",
+          "dilatação do tempo"
+        ]
+      },
+      {
+        content: [
+          "Há também a",
+          "do comprimento. O comprimento de uma barra quando medido no referencial em relação ao qual a barra está em movimento é",
+          "do que o comprimento medido no referencial ao qual a barra está em repouso. E o mais surpreendente, essa distinção entre essas medidas só ocorre se as mesmas forem feitas na",
+          ". O comprimento medido no referencial de repouso da barra, é chamado de",
+          ". A conexão entre tempo próprio (t0) e o tempo dilatado (t) é estabelecida através do fator de",
+          "(γ), de modo que, o tempo próprio é igual ao tempo dilatado",
+          "pelo fator γ. Já o comprimento próprio (L0) é igual ao comprimento contraído (L)",
+          "pelo fator γ."
+        ],
+        terms: [
+          "contração",
+          "menor",
+          "direção do movimento",
+          "comprimento próprio",
+          "Lorentz",
+          "dividido",
+          "multiplicado"
+        ]
+      }
+    ]
   }
 ];
