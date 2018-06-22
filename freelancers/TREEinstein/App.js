@@ -54,6 +54,7 @@ export default class App extends React.Component {
       animationRocket: null,
       animationStar: null,
       answers: [...Array(questions.length)],
+      clock: null,
       currentPoints: 0,
       draggablePosition: { x: 0, y: 0 },
       draggableVisible: false,
@@ -72,7 +73,8 @@ export default class App extends React.Component {
       termsPositions: {},
       timer: 0,
       userName: "",
-      userPicture: null
+      userPicture: null,
+      wrongTries: 0
     };
 
     this.ticker();
@@ -138,6 +140,12 @@ export default class App extends React.Component {
           Vibration.vibrate(100);
         } else {
           Vibration.vibrate(500);
+
+          this.setState(previousState => {
+            return {
+              wrongTries: ++previousState.wrongTries
+            };
+          });
         }
 
         this.setState({ actualSufix: "" });
@@ -201,10 +209,6 @@ export default class App extends React.Component {
       .some(v => v === true);
   };
 
-  allAnswered = () => {
-    return false;
-  };
-
   backHandler = () => {
     switch (this.state.screen) {
       case "User":
@@ -223,6 +227,7 @@ export default class App extends React.Component {
         this.updateScreen("User");
         return true;
       case "Game1":
+      case "Game1Again":
       case "Game3":
         Alert.alert(
           "Voltar",
@@ -405,6 +410,7 @@ export default class App extends React.Component {
           </View>
         );
       case "Game1":
+      case "Game1Again":
         return (
           <View style={styles.screen}>
             {this.state.draggableVisible ? (
@@ -447,9 +453,7 @@ export default class App extends React.Component {
                             {
                               text: "SIM",
                               onPress: () => {
-                                this.updateScreen("Game1");
-
-                                this.setState({ actualParagraph: 0 });
+                                this.updateScreen("Game1Again");
                               }
                             }
                           ],
@@ -659,7 +663,41 @@ export default class App extends React.Component {
                         this.state.actualParagraph ===
                           themes[this.state.actualTheme].paragraphs.length
                         ? () => {
-                            // END GAME
+                            let timeSpent = parseInt(
+                              (Math.abs(Date.now() - this.state.clock) /
+                                (1000 * 60)) %
+                                60
+                            );
+
+                            this.setState({
+                              currentPoints:
+                                100 +
+                                (this.state.wrongTries <
+                                themes[this.state.actualTheme].paragraphs
+                                  .map(p => {
+                                    return p.terms.length;
+                                  })
+                                  .reduce((a, b) => a + b, 0)
+                                  ? (themes[this.state.actualTheme].paragraphs
+                                      .map(p => {
+                                        return p.terms.length;
+                                      })
+                                      .reduce((a, b) => a + b, 0) -
+                                      this.state.wrongTries) *
+                                    10
+                                  : 0) +
+                                (timeSpent > 10 ? 0 : 100 - timeSpent * 10)
+                            });
+
+                            this.setState({
+                              pointsOptionFunction: () => {
+                                this.updateScreen("Game1Again");
+                              }
+                            });
+                            this.setState({
+                              pointsOptionLabel: "SELECIONAR OUTRO TEMA"
+                            });
+                            this.updateScreen("PointsWithOption");
                           }
                         : () => {
                             this.setState(previousState => {
@@ -894,6 +932,7 @@ export default class App extends React.Component {
           </View>
         );
       case "Points":
+      case "PointsWithOption":
         return (
           <View style={styles.content}>
             {this.state.animationStar && (
@@ -905,15 +944,37 @@ export default class App extends React.Component {
                 style={styles.animationStar}
               />
             )}
-            <View style={styles.points}>
+            <View
+              style={
+                this.state.screen === "PointsWithOption"
+                  ? styles.pointsWithOption
+                  : styles.points
+              }
+            >
               <Text style={styles.textPoints}>{this.state.currentPoints}</Text>
             </View>
+            {this.state.screen === "PointsWithOption" ? (
+              <Button
+                block
+                onPress={this.state.pointsOptionFunction}
+                style={[styles.button]}
+              >
+                <Text style={styles.textDefault}>
+                  {this.state.pointsOptionLabel}
+                </Text>
+              </Button>
+            ) : null}
             <Button
               block
               onPress={() => {
                 this.updateScreen("Menu");
               }}
-              style={[styles.button]}
+              style={[
+                styles.button,
+                this.state.screen === "PointsWithOption"
+                  ? styles.marginTop25
+                  : null
+              ]}
             >
               <Text style={styles.textDefault}>CONTINUAR</Text>
             </Button>
@@ -1086,6 +1147,7 @@ export default class App extends React.Component {
     let beforeScreen = this.state.screen;
 
     this.setState({ screen: screenName });
+    this.setState({ animationStar: null });
 
     switch (screenName) {
       case "Start":
@@ -1107,10 +1169,14 @@ export default class App extends React.Component {
         this.loadDBKeys();
         break;
       case "Game1":
-        this.setState({ actualParagraph: null });
+      case "Game1Again":
+        this.setState({
+          actualParagraph: screenName === "Game1Again" ? 0 : null
+        });
         this.setState({ actualSufix: "" });
         this.setState({ actualTerm: "" });
         this.setState({ actualTheme: null });
+        this.setState({ clock: Date.now() });
         this.setState({ currentPoints: 0 });
         this.setState({ draggableVisible: false });
         this.setState({
@@ -1126,6 +1192,8 @@ export default class App extends React.Component {
           };
         });
         this.setState({ termsPositions: {} });
+        this.setState({ wrongTries: 0 });
+        console.log(this.state.clock);
         break;
       case "Game3":
         this.setState({ actualQuestion: 0 });
@@ -1139,6 +1207,7 @@ export default class App extends React.Component {
         });
         break;
       case "Points":
+      case "PointsWithOption":
         this.playAnimation("star");
         break;
       default:
@@ -1302,6 +1371,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingBottom: 50,
+    position: "absolute"
+  },
+  pointsWithOption: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingBottom: 125,
     position: "absolute"
   },
   screen: {
@@ -1733,6 +1808,15 @@ const questions = [
 // Themes
 
 const themes = [
+  {
+    name: "ronaldo",
+    paragraphs: [
+      {
+        content: ["teste"],
+        terms: ["testado"]
+      }
+    ]
+  },
   {
     name: "Luz e Interferômetro",
     paragraphs: [
