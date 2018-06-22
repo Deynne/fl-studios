@@ -498,7 +498,9 @@ export default class App extends React.Component {
 
                           this.setState({ actualSufix: "" });
                           this.setState({ actualTerm: "" });
+                          this.setState({ clock: Date.now() });
                           this.setState({ draggableVisible: false });
+                          this.setState({ wrongTries: 0 });
                         }}
                         style={[
                           styles.button,
@@ -686,7 +688,7 @@ export default class App extends React.Component {
                                       this.state.wrongTries) *
                                     10
                                   : 0) +
-                                (timeSpent > 10 ? 0 : 100 - timeSpent * 10)
+                                (timeSpent > 15 ? 0 : 150 - timeSpent * 10)
                             });
 
                             this.setState({
@@ -972,7 +974,7 @@ export default class App extends React.Component {
               style={[
                 styles.button,
                 this.state.screen === "PointsWithOption"
-                  ? styles.marginTop25
+                  ? styles.marginTop10
                   : null
               ]}
             >
@@ -1131,7 +1133,8 @@ export default class App extends React.Component {
     setTimeout(() => {
       if (this.state.fontLoaded) {
         if (this.state.timer === splashTimer) {
-          this.updateScreen("Menu");
+          this.updateScreen("Start");
+          //this.updateScreen("Menu");
         }
 
         this.setState(previousState => {
@@ -1224,9 +1227,9 @@ const styles = StyleSheet.create({
     width: 256
   },
   animationStar: {
-    height: 300,
-    transform: [{ scale: 4 }],
-    width: 246
+    height: 250,
+    transform: [{ scale: 5 }],
+    width: 200
   },
   appIcon: {
     height: 256,
@@ -1352,6 +1355,9 @@ const styles = StyleSheet.create({
   inputTextItem: {
     borderColor: "#7D8990"
   },
+  marginTop10: {
+    marginTop: 10
+  },
   marginTop25: {
     marginTop: 25
   },
@@ -1376,7 +1382,7 @@ const styles = StyleSheet.create({
   pointsWithOption: {
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: 125,
+    paddingBottom: 115,
     position: "absolute"
   },
   screen: {
@@ -1808,15 +1814,6 @@ const questions = [
 // Themes
 
 const themes = [
-  {
-    name: "ronaldo",
-    paragraphs: [
-      {
-        content: ["teste"],
-        terms: ["testado"]
-      }
-    ]
-  },
   {
     name: "Luz e Interferômetro",
     paragraphs: [
