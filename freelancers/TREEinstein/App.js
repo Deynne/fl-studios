@@ -25,7 +25,7 @@ import {
   Vibration,
   View
 } from "react-native";
-import { Entypo, Ionicons } from "@expo/vector-icons";
+import { Entypo, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
 import rocketAnimation from "./assets/lotties/bms-rocket.json";
 import starAnimation from "./assets/lotties/star.json";
@@ -38,6 +38,8 @@ const blankSpaces = "_";
 const imageQuestion5 = "./assets/images/question-5.png";
 const imageQuestion10 = "./assets/images/question-10.png";
 const markdownLogo = "./assets/images/markdown-logo.jpg";
+const maxLinesGrid = 10;
+const maxColumnsGrid = 30;
 const splashTimer = 0;
 const userPictureDefault = "./assets/images/userPicture-default.png";
 
@@ -59,12 +61,14 @@ export default class App extends React.Component {
       draggablePosition: { x: 0, y: 0 },
       draggableVisible: false,
       fontLoaded: false,
+      gridStartPosition: {},
       instructionsTerms: ["Palavra Certa", "parágrafo", "termos", "movidos"],
       pan: new Animated.ValueXY(),
       questionOrder: Array.from(
         new Array(questions.length - 1),
         (v, i) => i + 1
       ),
+      showGrid: false,
       screen: "Splash",
       signed: false,
       termLayout: {},
@@ -74,6 +78,12 @@ export default class App extends React.Component {
       timer: 0,
       userName: "",
       userPicture: null,
+      wordsSearchGame: wordsSearchGame,
+      wordsSearchGameBoard: Array(maxLinesGrid)
+        .fill()
+        .map(() => Array(maxColumnsGrid).fill(null)),
+      wordsSearchSelected: "",
+      wordsSearchGameWordToFind: "",
       wrongTries: 0
     };
 
@@ -100,7 +110,7 @@ export default class App extends React.Component {
       this.setState({ draggablePosition: value });
     });
 
-    this.panResponder = PanResponder.create({
+    this.panResponder1 = PanResponder.create({
       onStartShouldSetPanResponder: (e, gesture) => true,
       onPanResponderGrant: (e, gesture) => {
         this.state.pan.setOffset({
@@ -151,6 +161,97 @@ export default class App extends React.Component {
         this.setState({ actualSufix: "" });
         this.setState({ actualTerm: "" });
         this.setState({ draggableVisible: false });
+      }
+    });
+
+    this.panResponder2 = PanResponder.create({
+      onStartShouldSetPanResponder: (e, gesture) => true,
+      onPanResponderGrant: (e, gesture) => {
+        this.setState({ wordsSearchSelected: "" });
+      },
+      onPanResponderMove: Animated.event(
+        [null, { dx: this.state.pan.x, dy: this.state.pan.y }],
+        {
+          listener: (event, gestureState) => {
+            let xPosition = Math.floor(
+              (gestureState.moveX - this.state.gridStartPosition.x) / 20
+            );
+            let yPosition = Math.floor(
+              (gestureState.moveY - this.state.gridStartPosition.y) / 25
+            );
+
+            if (
+              typeof this.state.wordsSearchGameBoard[yPosition] !==
+                "undefined" &&
+              typeof this.state.wordsSearchGameBoard[yPosition][xPosition] !==
+                "undefined"
+            ) {
+              if (
+                !this.state.wordsSearchGameBoard[yPosition][xPosition].pressing
+              ) {
+                this.state.wordsSearchGameBoard[yPosition][
+                  xPosition
+                ].pressing = true;
+
+                this.state.wordsSearchGameBoard[yPosition][
+                  xPosition
+                ].pressed = true;
+
+                this.setState(previousState => {
+                  return {
+                    wordsSearchSelected: (previousState.wordsSearchSelected += this.state.wordsSearchGameBoard[
+                      yPosition
+                    ][xPosition].letter)
+                  };
+                });
+              }
+            }
+          }
+        }
+      ),
+      onPanResponderRelease: (e, gesture) => {
+        if (
+          this.state.wordsSearchGameWordToFind ===
+          this.state.wordsSearchSelected
+        ) {
+          this.state.wordsSearchGame.find(i => {
+            if (i.word === this.state.wordsSearchSelected) {
+              i.answered = true;
+            }
+          });
+
+          this.state.wordsSearchGameBoard.map(line => {
+            line.map(column => {
+              column.answered = column.answered || column.pressed;
+            });
+          });
+
+          Vibration.vibrate(100);
+
+          if (
+            this.state.wordsSearchGame.reduce((a, b) => {
+              return a + (!b.answered ? 1 : 0);
+            }, 0) === 0
+          ) {
+            let timeSpent = parseInt(
+              (Math.abs(Date.now() - this.state.clock) / (1000 * 60)) % 60
+            );
+
+            this.setState({
+              currentPoints: 100 + (timeSpent > 15 ? 0 : 150 - timeSpent * 10)
+            });
+
+            this.updateScreen("Points");
+          } else {
+            this.updateScreen("Game2Back");
+          }
+        } else {
+          Vibration.vibrate(500);
+        }
+
+        this.setState({ wordsSearchSelected: "" });
+
+        this.updateGrid();
       }
     });
   };
@@ -228,6 +329,8 @@ export default class App extends React.Component {
         return true;
       case "Game1":
       case "Game1Again":
+      case "Game2":
+      case "Game2Back":
       case "Game3":
         Alert.alert(
           "Voltar",
@@ -389,11 +492,10 @@ export default class App extends React.Component {
               </Button>
               <Button
                 block
-                disabled={true}
                 onPress={() => {
                   this.updateScreen("Game2");
                 }}
-                style={(styles.buttonDisabled, styles.marginTop25)}
+                style={[styles.button, styles.marginTop25]}
               >
                 <Text style={styles.textDefault}>Caçador de Palavras</Text>
               </Button>
@@ -415,7 +517,7 @@ export default class App extends React.Component {
           <View style={styles.screen}>
             {this.state.draggableVisible ? (
               <Animated.View
-                {...this.panResponder.panHandlers}
+                {...this.panResponder1.panHandlers}
                 style={[
                   {
                     position: "absolute",
@@ -699,6 +801,7 @@ export default class App extends React.Component {
                             this.setState({
                               pointsOptionLabel: "SELECIONAR OUTRO TEMA"
                             });
+
                             this.updateScreen("PointsWithOption");
                           }
                         : () => {
@@ -744,6 +847,130 @@ export default class App extends React.Component {
                   )}
                 </Button>
               ) : null}
+            </View>
+          </View>
+        );
+      case "Game2":
+      case "Game2Back":
+        return this.state.showGrid ? (
+          <View style={styles.screen}>
+            <Animated.View
+              {...this.panResponder2.panHandlers}
+              onLayout={e => {
+                this.state.gridStartPosition = {
+                  x: e.nativeEvent.layout.x,
+                  y: e.nativeEvent.layout.y
+                };
+              }}
+              style={[{ marginTop: 25 }]}
+            >
+              {this.state.wordsSearchGameBoard.map((line, key) => {
+                return (
+                  <View key={key} style={styles.gridLine}>
+                    {line.map((cell, k) => {
+                      return (
+                        <Text
+                          key={k}
+                          style={[
+                            styles.gridText,
+                            cell.pressed && cell.pressing
+                              ? styles.gridTextPressed
+                              : cell.answered
+                                ? styles.gridTextAnswered
+                                : null
+                          ]}
+                        >
+                          {cell.letter.toUpperCase()}
+                        </Text>
+                      );
+                    })}
+                  </View>
+                );
+              })}
+            </Animated.View>
+            <View style={styles.footer}>
+              <Button
+                block
+                onPress={() => {
+                  this.updateScreen("Game2Back");
+                }}
+                style={styles.button}
+              >
+                <Text style={styles.textDefault}>VOLTAR</Text>
+              </Button>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.screen}>
+            <View style={styles.header}>
+              <View style={styles.headerContent}>
+                <Text style={styles.textDefault}>Caçador de Palavras</Text>
+                <TouchableHighlight
+                  style={styles.headerOption}
+                  onPress={() => {
+                    this.backHandler();
+                  }}
+                >
+                  <Ionicons name="md-menu" style={[styles.textDefault]} />
+                </TouchableHighlight>
+              </View>
+            </View>
+            <View style={styles.contentFull}>
+              <ScrollView
+                ref={scroller => {
+                  this.scroller = scroller;
+                }}
+                onContentSizeChange={(w, h) => {
+                  this.scroller.scrollTo({ x: 0, y: 0 });
+                }}
+                style={styles.contentScroll}
+              >
+                {this.state.wordsSearchGame.map((i, k) => {
+                  return (
+                    <ListItem key={k}>
+                      <Body
+                        style={[
+                          {
+                            flexDirection: "row",
+                            justifyContent: "space-between"
+                          }
+                        ]}
+                      >
+                        <Text style={[{ width: "75%" }]}>{i.label}</Text>
+                        <Button
+                          disabled={i.answered}
+                          onPress={() => {
+                            Expo.ScreenOrientation.allow(
+                              Expo.ScreenOrientation.Orientation.LANDSCAPE
+                            );
+
+                            this.setState({ showGrid: true });
+                            this.setState({
+                              wordsSearchGameWordToFind: i.word
+                            });
+                          }}
+                          style={[
+                            !i.answered ? styles.button : null,
+                            styles.buttonWordsSearchGame
+                          ]}
+                        >
+                          {i.answered ? (
+                            <Ionicons
+                              name="md-done-all"
+                              style={styles.textDefault}
+                            />
+                          ) : (
+                            <MaterialCommunityIcons
+                              name="textbox-password"
+                              style={styles.textDefault}
+                            />
+                          )}
+                        </Button>
+                      </Body>
+                    </ListItem>
+                  );
+                })}
+              </ScrollView>
             </View>
           </View>
         );
@@ -1133,8 +1360,8 @@ export default class App extends React.Component {
     setTimeout(() => {
       if (this.state.fontLoaded) {
         if (this.state.timer === splashTimer) {
-          this.updateScreen("Start");
-          //this.updateScreen("Menu");
+          //this.updateScreen("Start");
+          this.updateScreen("Menu");
         }
 
         this.setState(previousState => {
@@ -1144,6 +1371,94 @@ export default class App extends React.Component {
 
       this.ticker();
     }, 1000);
+  };
+
+  updateGrid = (populate = false) => {
+    if (populate) {
+      this.setState({ clock: Date.now() });
+
+      wordsSearchGame.map(i => {
+        i.answered = false;
+      });
+
+      /*
+      this.setState({
+        wordsSearchGame: wordsSearchGame.sort((i, j) => {
+          return i.word.length <= j.word.length ? 1 : -1;
+        })
+      });
+      //*/
+      //*
+      this.setState({
+        wordsSearchGame: wordsSearchGame.sort(() => Math.random() - 0.5)
+      });
+      //*/
+
+      for (let w = 0; w < this.state.wordsSearchGame.length; ++w) {
+        let word = this.state.wordsSearchGame[w].word;
+        let vertical =
+          word.length < maxLinesGrid - 2 && Math.round(Math.random()) > 0;
+
+        let maxStart = (vertical ? maxLinesGrid : maxColumnsGrid) - word.length;
+        let start = Math.floor(Math.random() * (maxStart + 1));
+        let startLine = vertical
+          ? start
+          : Math.floor(Math.random() * maxLinesGrid);
+        let startColumn = vertical
+          ? Math.floor(Math.random() * maxColumnsGrid)
+          : start;
+
+        let canAdd = true;
+
+        for (let l = 0; canAdd && l < word.length; ++l) {
+          let line = startLine + (vertical ? l : 0);
+          let column = startColumn + (vertical ? 0 : l);
+
+          if (
+            this.state.wordsSearchGameBoard[line][column] !== null &&
+            this.state.wordsSearchGameBoard[line][column].letter !== word[l]
+          ) {
+            canAdd = false;
+          }
+        }
+
+        if (canAdd) {
+          for (let l = 0; l < word.length; ++l) {
+            let line = startLine + (vertical ? l : 0);
+            let column = startColumn + (vertical ? 0 : l);
+
+            this.state.wordsSearchGameBoard[line][column] = {
+              answered: this.state.wordsSearchGame[w].answered,
+              letter: word[l],
+              pressed: this.state.wordsSearchGame[w].answered,
+              pressing: false
+            };
+          }
+        } else {
+          --w;
+        }
+      }
+    }
+
+    for (let i = 0; i < this.state.wordsSearchGameBoard.length; ++i) {
+      for (let j = 0; j < this.state.wordsSearchGameBoard[i].length; ++j) {
+        if (this.state.wordsSearchGameBoard[i][j] === null) {
+          this.state.wordsSearchGameBoard[i][j] = {
+            letter: Math.random()
+              .toString(36)
+              .replace(/[^a-z]+/g, "")
+              .substr(0, 1),
+            pressed: false,
+            pressing: false
+          };
+        }
+
+        this.state.wordsSearchGameBoard[i][
+          j
+        ].pressed = this.state.wordsSearchGameBoard[i][j].answered;
+        this.state.wordsSearchGameBoard[i][j].pressing = false;
+      }
+    }
   };
 
   updateScreen = screenName => {
@@ -1169,7 +1484,15 @@ export default class App extends React.Component {
         }
         break;
       case "Menu":
+        Expo.ScreenOrientation.allow(Expo.ScreenOrientation.Orientation.ALL);
+
         this.loadDBKeys();
+
+        this.setState({
+          wordsSearchGameBoard: Array(maxLinesGrid)
+            .fill()
+            .map(() => Array(maxColumnsGrid).fill(null))
+        });
         break;
       case "Game1":
       case "Game1Again":
@@ -1196,7 +1519,15 @@ export default class App extends React.Component {
         });
         this.setState({ termsPositions: {} });
         this.setState({ wrongTries: 0 });
-        console.log(this.state.clock);
+        break;
+      case "Game2":
+      case "Game2Back":
+        Expo.ScreenOrientation.allow(Expo.ScreenOrientation.Orientation.ALL);
+
+        this.setState({ showGrid: false });
+        this.setState({ wordsSearchGameWordToFind: "" });
+
+        this.updateGrid(screenName === "Game2");
         break;
       case "Game3":
         this.setState({ actualQuestion: 0 });
@@ -1266,13 +1597,9 @@ const styles = StyleSheet.create({
     height: 50,
     width: "100%"
   },
-  twoButtonsLeft: {
-    marginLeft: "5%",
-    width: "45%"
-  },
-  twoButtonsRight: {
-    marginRight: "5%",
-    width: "45%"
+  buttonWordsSearchGame: {
+    paddingLeft: 10,
+    paddingRight: 10
   },
   checkedBox: {
     paddingLeft: 10
@@ -1318,6 +1645,26 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     height: 60,
     width: "90%"
+  },
+  gridLine: {
+    flexDirection: "row"
+  },
+  gridText: {
+    borderColor: "#000000",
+    borderWidth: 0.25,
+    fontSize: 18,
+    height: 25,
+    textAlign: "center",
+    width: 20
+  },
+  gridTextAnswered: {
+    backgroundColor: "#FCB9A3",
+    fontWeight: "bold"
+  },
+  gridTextPressed: {
+    backgroundColor: "#FA7447",
+    color: "#FFFFFF",
+    fontWeight: "bold"
   },
   header: {
     alignItems: "center",
@@ -1424,6 +1771,14 @@ const styles = StyleSheet.create({
     marginLeft: 2,
     marginRight: 2
   },
+  twoButtonsLeft: {
+    marginLeft: "5%",
+    width: "45%"
+  },
+  twoButtonsRight: {
+    marginRight: "5%",
+    width: "45%"
+  },
   userPicture: {
     borderRadius: 64,
     height: 128,
@@ -1519,7 +1874,7 @@ const questions = [
     ],
     question: (
       <Text style={styles.textQuestion}>
-        A respeito da velocidade da luz e sua natureza. Assina a alternativa
+        A respeito da velocidade da luz e sua natureza. Assine a alternativa
         correta:
       </Text>
     )
@@ -1586,7 +1941,7 @@ const questions = [
     ],
     question: (
       <Text style={styles.textQuestion}>
-        A cerca do propósito e dos resultados obtidos pelo Experimento de
+        Acerca do propósito e dos resultados obtidos pelo Experimento de
         Michelson e Morley, é correto afirmar:
       </Text>
     )
@@ -1819,7 +2174,7 @@ const themes = [
     paragraphs: [
       {
         content: [
-          "Seja no campo da filosofia ou no cientifico-experimental, o conceito e a natureza da luz inquietam o homem. Galileu (1564-1642) físico",
+          "Seja no campo da filosofia ou no científico-experimental, o conceito e a natureza da luz inquietam o homem. Galileu (1564-1642) físico",
           ", que viveu entre os séculos XVI e XVII, propôs um experimento conhecido como",
           ", o objetivo era observar se a velocidade da luz era instantânea ou não, assim verificar se a luz tinha velocidade",
           "ou",
@@ -1916,7 +2271,7 @@ const themes = [
           "nesse referencial. Todavia, esses mesmos eventos",
           "necessariamente simultâneos em outros referenciais, em outras palavras, o tempo é uma quantidade",
           "e não",
-          "como se pensava Newton. Com a ideia de tempo relativo, surge uma nova definição ligada a esse fato, o de tempo próprio, que é aquele intervalo de tempo médio pelo relógio pertencente ao",
+          "como se pensava Newton. Com a ideia de tempo relativo, surge uma nova definição ligada a esse fato, o de tempo próprio, que é aquele intervalo de tempo medido pelo relógio pertencente ao",
           "onde ocorre o evento, essa relatividade temporal é conhecida como",
           "."
         ],
@@ -1936,9 +2291,9 @@ const themes = [
           "do comprimento. O comprimento de uma barra quando medido no referencial em relação ao qual a barra está em movimento é",
           "do que o comprimento medido no referencial ao qual a barra está em repouso. E o mais surpreendente, essa distinção entre essas medidas só ocorre se as mesmas forem feitas na",
           ". O comprimento medido no referencial de repouso da barra, é chamado de",
-          ". A conexão entre tempo próprio (t0) e o tempo dilatado (t) é estabelecida através do fator de",
+          ". A conexão entre tempo próprio (t₀) e o tempo dilatado (t) é estabelecida através do fator de",
           "(γ), de modo que, o tempo próprio é igual ao tempo dilatado",
-          "pelo fator γ. Já o comprimento próprio (L0) é igual ao comprimento contraído (L)",
+          "pelo fator γ. Já o comprimento próprio (L₀) é igual ao comprimento contraído (L)",
           "pelo fator γ."
         ],
         terms: [
@@ -1952,5 +2307,108 @@ const themes = [
         ]
       }
     ]
+  }
+];
+
+// Word Search
+
+const wordsSearchGame = [
+  {
+    answered: false,
+    label: "A velocidade da luz é uma quantidade:",
+    word: "absoluta"
+  },
+  {
+    answered: false,
+    label:
+      "Tipo de publicação usada por Einstein para apresentar seus trabalhos em 1905:",
+    word: "artigo"
+  },
+  {
+    answered: false,
+    label:
+      "O comprimento medido em relação ao qual um objeto está em movimento:",
+    word: "contraído"
+  },
+  {
+    answered: false,
+    label: "Natureza da luz defendida por Newton:",
+    word: "corpuscular"
+  },
+  { answered: false, label: "Número de postulados da TER:", word: "dois" },
+  {
+    answered: false,
+    label: "Natureza da luz aceita atualmente:",
+    word: "dual"
+  },
+  {
+    answered: false,
+    label: "Criador da teoria moderna da relatividade:",
+    word: "einstein"
+  },
+  {
+    answered: false,
+    label: "Meio material ao qual se acreditava suportar ondas de luz:",
+    word: "éter"
+  },
+  {
+    answered: false,
+    label:
+      "Físico que sugeriu a contração do comprimento em um dos braços do interferômetro:",
+    word: "fitzgerald"
+  },
+  {
+    answered: false,
+    label: "Nome do paradoxo usado para ilustrar a relatividade do tempo:",
+    word: "gêmeos"
+  },
+  {
+    answered: false,
+    label: "Tipos de referências aos quais são válidos a TRE:",
+    word: "inerciais"
+  },
+  {
+    answered: false,
+    label:
+      "Aparelho criado por Michelson para verificar a velocidade da luz relativo ao éter:",
+    word: "interferômetro"
+  },
+  {
+    answered: false,
+    label:
+      "Instrumento usado por Galileu na tentativa de medir a velocidade da luz:",
+    word: "lanterna"
+  },
+  {
+    answered: false,
+    label: "Sigla para o tipo de movimento entre referenciais inerciais:",
+    word: "mru"
+  },
+  {
+    answered: false,
+    label: "Natureza da luz defendida por Huygens:",
+    word: "ondulatória"
+  },
+  {
+    answered: false,
+    label:
+      "O intervalo de tempo medido no referencial no qual ocorre os eventos:",
+    word: "próprio"
+  },
+  {
+    answered: false,
+    label:
+      "A relatividade da simultaneidade estabelece o tempo com uma quantidade:",
+    word: "relativística"
+  },
+  {
+    answered: false,
+    label: "Parâmetro que altera o valor do fator de Lorentz:",
+    word: "velocidade"
+  },
+  {
+    answered: false,
+    label: "A relatividade de Galileu falha em altas:",
+    word: "velocidades"
   }
 ];

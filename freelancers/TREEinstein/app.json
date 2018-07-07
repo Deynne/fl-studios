@@ -5,12 +5,11 @@
     "icon": "./assets/images/app-icon.png",
     "version": "1.0.0",
     "ios": {
-      "bundleIdentifier": "br.com.fabianolothor.treeinstein",
-      "versionCode": 2
+      "bundleIdentifier": "br.com.fabianolothor.treeinstein"
     },
     "android": {
       "package": "br.com.fabianolothor.treeinstein",
-      "versionCode": 2
+      "versionCode": 4
     },
     "sdkVersion": "28.0.0"
   }
