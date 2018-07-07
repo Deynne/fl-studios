@@ -1360,8 +1360,8 @@ export default class App extends React.Component {
     setTimeout(() => {
       if (this.state.fontLoaded) {
         if (this.state.timer === splashTimer) {
-          //this.updateScreen("Start");
-          this.updateScreen("Menu");
+          this.updateScreen("Start");
+          //this.updateScreen("Menu");
         }
 
         this.setState(previousState => {
