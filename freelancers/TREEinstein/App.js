@@ -174,10 +174,10 @@ export default class App extends React.Component {
         {
           listener: (event, gestureState) => {
             let xPosition = Math.floor(
-              (gestureState.moveX - this.state.gridStartPosition.x) / 20
+              (gestureState.moveX - this.state.gridStartPosition.x) / 21
             );
             let yPosition = Math.floor(
-              (gestureState.moveY - this.state.gridStartPosition.y) / 25
+              (gestureState.moveY - this.state.gridStartPosition.y) / 30
             );
 
             if (
@@ -643,7 +643,7 @@ export default class App extends React.Component {
                         {this.splitPhrase("No jogo da")}
                         {this.getTermText("Palavra Certa", "_instruções")}
                         {this.splitPhrase(
-                          "você deve arrastar os termos disponíveis para suas posições corretas, até que o"
+                          "você deve clicar e arrastar os termos disponíveis abaixo, para as suas posições corretas, até que o"
                         )}
                         {this.getTermText("parágrafo", "_instruções")}
                         {this.splitPhrase(
@@ -862,7 +862,7 @@ export default class App extends React.Component {
                   y: e.nativeEvent.layout.y
                 };
               }}
-              style={[{ marginTop: 25 }]}
+              style={[{ marginTop: 10 }]}
             >
               {this.state.wordsSearchGameBoard.map((line, key) => {
                 return (
@@ -888,15 +888,19 @@ export default class App extends React.Component {
                 );
               })}
             </Animated.View>
-            <View style={styles.footer}>
+            <View style={styles.footerGrid}>
               <Button
                 block
                 onPress={() => {
                   this.updateScreen("Game2Back");
                 }}
-                style={styles.button}
+                style={styles.buttonGrid}
               >
-                <Text style={styles.textDefault}>VOLTAR</Text>
+                <Text style={styles.textDefault}>
+                  {this.state.wordsSearchSelected === ""
+                    ? "VOLTAR"
+                    : this.state.wordsSearchSelected.toUpperCase()}
+                </Text>
               </Button>
             </View>
           </View>
@@ -1254,9 +1258,8 @@ export default class App extends React.Component {
         }}
         style={styles.textTerm}
       >
-        {
-          "_ _ _ _ _ _ _"
-          //term.replace(/./g, blankSpaces)
+        {sufix === "_instruções" ? "_ _ _ _ _ _ _" : "_ _ _ _ _ _ _ _ _ _"
+        //term.replace(/./g, blankSpaces)
         }
       </Text>
     ) : (
@@ -1597,6 +1600,10 @@ const styles = StyleSheet.create({
     height: 50,
     width: "100%"
   },
+  buttonGrid: {
+    backgroundColor: "#78CBF5",
+    height: 40
+  },
   buttonWordsSearchGame: {
     paddingLeft: 10,
     paddingRight: 10
@@ -1646,16 +1653,23 @@ const styles = StyleSheet.create({
     height: 60,
     width: "90%"
   },
+  footerGrid: {
+    alignItems: "center",
+    flexWrap: "wrap",
+    flexDirection: "column",
+    height: 40,
+    width: "100%"
+  },
   gridLine: {
     flexDirection: "row"
   },
   gridText: {
     borderColor: "#000000",
     borderWidth: 0.25,
-    fontSize: 18,
-    height: 25,
+    fontSize: 24,
+    height: 30,
     textAlign: "center",
-    width: 20
+    width: 21
   },
   gridTextAnswered: {
     backgroundColor: "#FCB9A3",
@@ -2224,7 +2238,7 @@ const themes = [
           "e várias consequências vieram com essa comprovação, a mais importante foi a constância da velocidade da",
           ". A ",
           "do comprimento de Fitzgerald (1851-1901), foi uma tentativa de explicar os resultados negativos do experimento de",
-          "afim de garantir a",
+          "a fim de garantir a",
           "do éter. Uma vez constante a velocidade da luz no vácuo para qualquer",
           ", a relatividade Galileana apresentava",
           ", sendo necessário a criação de uma nova",
