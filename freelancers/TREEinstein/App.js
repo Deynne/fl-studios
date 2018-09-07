@@ -38,7 +38,7 @@ const blankSpaces = "_";
 const imageQuestion5 = "./assets/images/question-5.png";
 const imageQuestion10 = "./assets/images/question-10.png";
 const markdownLogo = "./assets/images/markdown-logo.jpg";
-const maxLinesGrid = 10;
+const maxLinesGrid = 12;
 const maxColumnsGrid = 30;
 const splashTimer = 0;
 const userPictureDefault = "./assets/images/userPicture-default.png";
@@ -59,17 +59,18 @@ export default class App extends React.Component {
       clock: null,
       currentPoints: 0,
       draggablePosition: { x: 0, y: 0 },
-      draggableVisible: false,
+      draggableVisVisible: false,
       fontLoaded: false,
       gridStartPosition: {},
-      instructionsTerms: ["Palavra Certa", "parágrafo", "termos", "movidos"],
+      instructionsTerms: [],
       pan: new Animated.ValueXY(),
       questionOrder: Array.from(
         new Array(questions.length - 1),
         (v, i) => i + 1
       ),
-      showGrid: false,
       screen: "Splash",
+      showGrid: false,
+      showInstructions: true,
       signed: false,
       termLayout: {},
       termLayoutAll: {},
@@ -78,6 +79,7 @@ export default class App extends React.Component {
       timer: 0,
       userName: "",
       userPicture: null,
+      vibrate: true,
       wordsSearchGame: wordsSearchGame,
       wordsSearchGameBoard: Array(maxLinesGrid)
         .fill()
@@ -147,9 +149,13 @@ export default class App extends React.Component {
             this.getActualTermWithSufix()
           ].answered = true;
 
-          Vibration.vibrate(100);
+          if (this.state.vibrate) {
+            Vibration.vibrate(100);
+          }
         } else {
-          Vibration.vibrate(500);
+          if (this.state.vibrate) {
+            Vibration.vibrate(500);
+          }
 
           this.setState(previousState => {
             return {
@@ -174,10 +180,10 @@ export default class App extends React.Component {
         {
           listener: (event, gestureState) => {
             let xPosition = Math.floor(
-              (gestureState.moveX - this.state.gridStartPosition.x) / 21
+              (gestureState.moveX - this.state.gridStartPosition.x) / 19
             );
             let yPosition = Math.floor(
-              (gestureState.moveY - this.state.gridStartPosition.y) / 30
+              (gestureState.moveY - this.state.gridStartPosition.y) / 25
             );
 
             if (
@@ -226,7 +232,9 @@ export default class App extends React.Component {
             });
           });
 
-          Vibration.vibrate(100);
+          if (this.state.vibrate) {
+            Vibration.vibrate(100);
+          }
 
           if (
             this.state.wordsSearchGame.reduce((a, b) => {
@@ -246,7 +254,9 @@ export default class App extends React.Component {
             this.updateScreen("Game2Back");
           }
         } else {
-          Vibration.vibrate(500);
+          if (this.state.vibrate) {
+            Vibration.vibrate(500);
+          }
         }
 
         this.setState({ wordsSearchSelected: "" });
@@ -277,10 +287,12 @@ export default class App extends React.Component {
       let signed = await AsyncStorage.getItem("@App:signed");
       let userName = await AsyncStorage.getItem("@App:userName");
       let userPicture = await AsyncStorage.getItem("@App:userPicture");
+      let vibrate = await AsyncStorage.getItem("@App:vibrate");
 
       this.setState({ signed: !(signed === null) });
       this.setState({ userName: userName === null ? "" : userName });
       this.setState({ userPicture: userPicture });
+      this.setState({ vibrate: vibrate === null ? true : vibrate === "true" });
     } catch (error) {
       console.log(error);
     }
@@ -459,7 +471,7 @@ export default class App extends React.Component {
         );
       case "Menu":
         return (
-          <View style={styles.screen}>
+          <View key={"menu"} style={[styles.screen]}>
             <View style={styles.header}>
               <View style={styles.headerContent}>
                 <Text style={styles.textDefault}>{this.state.userName}</Text>
@@ -508,6 +520,45 @@ export default class App extends React.Component {
               >
                 <Text style={styles.textDefault}>Autoaprendizagem</Text>
               </Button>
+              <View style={styles.contentMenuOptions}>
+                <Button
+                  rounded
+                  onPress={() => {
+                    this.toggleVibration();
+                  }}
+                  style={[
+                    styles.buttonOval,
+                    styles.marginTop25,
+                    {
+                      backgroundColor: this.state.vibrate
+                        ? "#78CBF5"
+                        : "#DFDFDF"
+                    }
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name="vibrate"
+                    style={[styles.textDefault]}
+                  />
+                </Button>
+                <Button
+                  rounded
+                  onPress={() => {
+                    Alert.alert(
+                      "Créditos",
+                      "Idealização:\n- Geogenes Melo de Lima\n\nDesenvolvimento:\n- FL Studios\n- Fabiano Carneiro de Oliveira\n- Geogenes Melo de Lima\n\nContato:\n- fabiano.lothor@gmail.com\n- georgenesmelo@yahoo.com.br\n\n© 2018",
+                      [{ text: "OK" }],
+                      { cancelable: true }
+                    );
+                  }}
+                  style={[styles.buttonOval, styles.marginTop25]}
+                >
+                  <MaterialCommunityIcons
+                    name="information-variant"
+                    style={[styles.textDefault]}
+                  />
+                </Button>
+              </View>
             </View>
           </View>
         );
@@ -640,21 +691,19 @@ export default class App extends React.Component {
                   >
                     {this.state.actualParagraph === null ? (
                       <View style={styles.paragraphs}>
-                        {this.splitPhrase("No jogo da")}
-                        {this.getTermText("Palavra Certa", "_instruções")}
+                        {this.splitPhrase("No jogo de aprendizagem ")}
+                        <Text style={styles.textTerm}>palavra </Text>
+                        <Text style={styles.textTerm}>certa</Text>
                         {this.splitPhrase(
-                          "você deve clicar e arrastar os termos disponíveis abaixo, para as suas posições corretas, até que o"
+                          ", você deve selecionar com um clique um dos termos disponíveis na parte inferior da tela e em seguida arrastá-lo para a sua posição correta. O jogo termina quando todos os parágrafos estiverem preenchidos."
                         )}
-                        {this.getTermText("parágrafo", "_instruções")}
                         {this.splitPhrase(
-                          "esteja completamente preenchido. Escolha um dos"
+                          "Ao final do preenchimento de cada tema, uma pontuação entre "
                         )}
-                        {this.getTermText("termos", "_instruções")}
-                        {this.splitPhrase(
-                          "listados na parte inferior da tela para que eles possam ser"
-                        )}
-                        {this.getTermText("movidos", "_instruções")}
-                        {this.splitPhrase("para o local indicado.")}
+                        <Text style={styles.textTerm}>100</Text>
+                        <Text style={styles.textTerm}> e </Text>
+                        <Text style={styles.textTerm}>500</Text>
+                        {this.splitPhrase(" pontos será gerada.")}
                       </View>
                     ) : (
                       <View style={styles.paragraphs}>
@@ -908,7 +957,11 @@ export default class App extends React.Component {
           <View style={styles.screen}>
             <View style={styles.header}>
               <View style={styles.headerContent}>
-                <Text style={styles.textDefault}>Caçador de Palavras</Text>
+                <Text style={styles.textDefault}>
+                  {this.state.showInstructions
+                    ? "Instruções"
+                    : "Caçador de Palavras"}
+                </Text>
                 <TouchableHighlight
                   style={styles.headerOption}
                   onPress={() => {
@@ -929,53 +982,94 @@ export default class App extends React.Component {
                 }}
                 style={styles.contentScroll}
               >
-                {this.state.wordsSearchGame.map((i, k) => {
-                  return (
-                    <ListItem key={k}>
-                      <Body
-                        style={[
-                          {
-                            flexDirection: "row",
-                            justifyContent: "space-between"
-                          }
-                        ]}
-                      >
-                        <Text style={[{ width: "75%" }]}>{i.label}</Text>
-                        <Button
-                          disabled={i.answered}
-                          onPress={() => {
-                            Expo.ScreenOrientation.allow(
-                              Expo.ScreenOrientation.Orientation.LANDSCAPE
-                            );
-
-                            this.setState({ showGrid: true });
-                            this.setState({
-                              wordsSearchGameWordToFind: i.word
-                            });
-                          }}
+                {this.state.showInstructions ? (
+                  <View style={styles.paragraphs}>
+                    {this.splitPhrase("No jogo de aprendizagem ")}
+                    <Text style={styles.textTerm}>caçador</Text>
+                    <Text style={styles.textTerm}> de </Text>
+                    <Text style={styles.textTerm}>palavras</Text>
+                    {this.splitPhrase(
+                      ", você deve selecionar uma pergunta e encontrar sua resposta inserida no quadro de palavras disponível."
+                    )}
+                    {this.splitPhrase("Uma pontuação entre ")}
+                    <Text style={styles.textTerm}>100</Text>
+                    <Text style={styles.textTerm}> e </Text>
+                    <Text style={styles.textTerm}>250</Text>
+                    {this.splitPhrase(
+                      " pontos será gerada, quando todas as perguntas forem respondidas."
+                    )}
+                  </View>
+                ) : (
+                  this.state.wordsSearchGame.map((i, k) => {
+                    return (
+                      <ListItem key={k}>
+                        <Body
                           style={[
-                            !i.answered ? styles.button : null,
-                            styles.buttonWordsSearchGame
+                            {
+                              flexDirection: "row",
+                              justifyContent: "space-between"
+                            }
                           ]}
                         >
-                          {i.answered ? (
-                            <Ionicons
-                              name="md-done-all"
-                              style={styles.textDefault}
-                            />
-                          ) : (
-                            <MaterialCommunityIcons
-                              name="textbox-password"
-                              style={styles.textDefault}
-                            />
-                          )}
-                        </Button>
-                      </Body>
-                    </ListItem>
-                  );
-                })}
+                          <Text style={[{ width: "75%" }]}>{i.label}</Text>
+                          <Button
+                            disabled={i.answered}
+                            onPress={() => {
+                              Expo.ScreenOrientation.allow(
+                                Expo.ScreenOrientation.Orientation.LANDSCAPE
+                              );
+
+                              this.setState({ showGrid: true });
+                              this.setState({
+                                wordsSearchGameWordToFind: i.word
+                              });
+                            }}
+                            style={[
+                              !i.answered ? styles.button : null,
+                              styles.buttonWordsSearchGame
+                            ]}
+                          >
+                            {i.answered ? (
+                              <Ionicons
+                                name="md-done-all"
+                                style={styles.textDefault}
+                              />
+                            ) : (
+                              <MaterialCommunityIcons
+                                name="textbox-password"
+                                style={styles.textDefault}
+                              />
+                            )}
+                          </Button>
+                        </Body>
+                      </ListItem>
+                    );
+                  })
+                )}
               </ScrollView>
             </View>
+            {this.state.showInstructions ? (
+              <View style={styles.footer}>
+                <Button
+                  block
+                  onPress={() => {
+                    this.setState({ showInstructions: false });
+                  }}
+                  style={styles.button}
+                >
+                  <View style={{ flexDirection: "row" }}>
+                    <Ionicons
+                      name="ios-arrow-forward"
+                      style={styles.textDefault}
+                    />
+                    <Ionicons
+                      name="ios-arrow-forward"
+                      style={styles.textDefault}
+                    />
+                  </View>
+                </Button>
+              </View>
+            ) : null}
           </View>
         );
       case "Game3":
@@ -1326,7 +1420,9 @@ export default class App extends React.Component {
   };
 
   selectTerm = (term, sufix = "") => {
-    Vibration.vibrate(100);
+    if (this.state.vibrate) {
+      Vibration.vibrate(100);
+    }
 
     this.setState({
       draggablePosition: {
@@ -1374,6 +1470,20 @@ export default class App extends React.Component {
 
       this.ticker();
     }, 1000);
+  };
+
+  toggleVibration = () => {
+    this.setState(previousState => {
+      return {
+        vibrate: !previousState.vibrate
+      };
+    });
+
+    this.saveDBKey("vibrate", !this.state.vibrate ? "true" : "false");
+
+    if (!this.state.vibrate) {
+      Vibration.vibrate(500);
+    }
   };
 
   updateGrid = (populate = false) => {
@@ -1528,6 +1638,9 @@ export default class App extends React.Component {
         Expo.ScreenOrientation.allow(Expo.ScreenOrientation.Orientation.ALL);
 
         this.setState({ showGrid: false });
+        this.setState({
+          showInstructions: screenName === "Game2Back" ? false : true
+        });
         this.setState({ wordsSearchGameWordToFind: "" });
 
         this.updateGrid(screenName === "Game2");
@@ -1596,6 +1709,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#78CBF5",
     height: 50
   },
+  buttonOval: {
+    backgroundColor: "#78CBF5",
+    justifyContent: "center",
+    minHeight: 50,
+    minWidth: 50
+  },
   buttonDisabled: {
     height: 50,
     width: "100%"
@@ -1629,6 +1748,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     width: "100%"
+  },
+  contentMenuOptions: {
+    alignItems: "center",
+    flexWrap: "wrap",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "50%"
   },
   contentQuestions: {
     marginBottom: "2%"
@@ -1666,10 +1792,10 @@ const styles = StyleSheet.create({
   gridText: {
     borderColor: "#000000",
     borderWidth: 0.25,
-    fontSize: 24,
-    height: 30,
+    fontSize: 18,
+    height: 25,
     textAlign: "center",
-    width: 21
+    width: 19
   },
   gridTextAnswered: {
     backgroundColor: "#FCB9A3",
@@ -1823,10 +1949,15 @@ const questions = [
       <View>
         <Text style={styles.textQuestion}>
           No jogo da autoaprendizagem, você deve marcar a alternativa correta.
-          Por exemplo:
         </Text>
         <Text style={styles.breakLine} />
-        <Text style={styles.textStrong}>Quem descobriu o Brasil?</Text>
+        <Text style={styles.textQuestion}>
+          Ao final do jogo, uma pontuação entre{" "}
+          <Text style={[styles.textQuestion, styles.textTerm]}>0 e 100</Text>{" "}
+          pontos será gerada quando todas as perguntas forem respondidas.
+        </Text>
+        <Text style={styles.breakLine} />
+        <Text style={styles.textStrong}>Ex: Quem descobriu o Brasil?</Text>
       </View>
     )
   },
