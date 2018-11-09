@@ -3,13 +3,13 @@
     "name": "TRE Einstein",
     "description": "Aplicativo Educacional",
     "icon": "./assets/images/app-icon.png",
-    "version": "2.0.0",
+    "version": "3.0.0",
     "ios": {
       "bundleIdentifier": "br.com.fabianolothor.treeinstein"
     },
     "android": {
       "package": "br.com.fabianolothor.treeinstein",
-      "versionCode": 7
+      "versionCode": 8
     },
     "sdkVersion": "28.0.0",
     "packagerOpts": {

@@ -344,6 +344,7 @@ export default class App extends React.Component {
       case "Game2":
       case "Game2Back":
       case "Game3":
+      case "Game3Answers":
         Alert.alert(
           "Voltar",
           "Tem certeza que deseja retornar para o menu inicial?\n\nSeu progresso será perdido.",
@@ -590,8 +591,8 @@ export default class App extends React.Component {
                   {this.state.actualParagraph === null
                     ? "Instruções"
                     : this.state.actualParagraph === 0
-                      ? "Escolha um Tema"
-                      : themes[this.state.actualTheme].name}
+                    ? "Escolha um Tema"
+                    : themes[this.state.actualTheme].name}
                 </Text>
                 <View style={styles.headerOptions}>
                   {this.state.actualParagraph > 0 ? (
@@ -815,55 +816,55 @@ export default class App extends React.Component {
                       : this.state.actualTheme !== null &&
                         this.state.actualParagraph ===
                           themes[this.state.actualTheme].paragraphs.length
-                        ? () => {
-                            let timeSpent = parseInt(
-                              (Math.abs(Date.now() - this.state.clock) /
-                                (1000 * 60)) %
-                                60
-                            );
+                      ? () => {
+                          let timeSpent = parseInt(
+                            (Math.abs(Date.now() - this.state.clock) /
+                              (1000 * 60)) %
+                              60
+                          );
 
-                            this.setState({
-                              currentPoints:
-                                100 +
-                                (this.state.wrongTries <
-                                themes[this.state.actualTheme].paragraphs
-                                  .map(p => {
-                                    return p.terms.length;
-                                  })
-                                  .reduce((a, b) => a + b, 0)
-                                  ? (themes[this.state.actualTheme].paragraphs
-                                      .map(p => {
-                                        return p.terms.length;
-                                      })
-                                      .reduce((a, b) => a + b, 0) -
-                                      this.state.wrongTries) *
-                                    10
-                                  : 0) +
-                                (timeSpent > 15 ? 0 : 150 - timeSpent * 10)
-                            });
+                          this.setState({
+                            currentPoints:
+                              100 +
+                              (this.state.wrongTries <
+                              themes[this.state.actualTheme].paragraphs
+                                .map(p => {
+                                  return p.terms.length;
+                                })
+                                .reduce((a, b) => a + b, 0)
+                                ? (themes[this.state.actualTheme].paragraphs
+                                    .map(p => {
+                                      return p.terms.length;
+                                    })
+                                    .reduce((a, b) => a + b, 0) -
+                                    this.state.wrongTries) *
+                                  10
+                                : 0) +
+                              (timeSpent > 15 ? 0 : 150 - timeSpent * 10)
+                          });
 
-                            this.setState({
-                              pointsOptionFunction: () => {
-                                this.updateScreen("Game1Again");
-                              }
-                            });
-                            this.setState({
-                              pointsOptionLabel: "SELECIONAR OUTRO TEMA"
-                            });
+                          this.setState({
+                            pointsOptionFunction: () => {
+                              this.updateScreen("Game1Again");
+                            }
+                          });
+                          this.setState({
+                            pointsOptionLabel: "SELECIONAR OUTRO TEMA"
+                          });
 
-                            this.updateScreen("PointsWithOption");
-                          }
-                        : () => {
-                            this.setState(previousState => {
-                              return {
-                                actualParagraph: ++previousState.actualParagraph
-                              };
-                            });
+                          this.updateScreen("PointsWithOption");
+                        }
+                      : () => {
+                          this.setState(previousState => {
+                            return {
+                              actualParagraph: ++previousState.actualParagraph
+                            };
+                          });
 
-                            this.setState({ actualSufix: "" });
-                            this.setState({ actualTerm: "" });
-                            this.setState({ draggableVisible: false });
-                          }
+                          this.setState({ actualSufix: "" });
+                          this.setState({ actualTerm: "" });
+                          this.setState({ draggableVisible: false });
+                        }
                   }
                   style={[
                     this.state.actualTheme !== null &&
@@ -925,8 +926,8 @@ export default class App extends React.Component {
                             cell.pressed && cell.pressing
                               ? styles.gridTextPressed
                               : cell.answered
-                                ? styles.gridTextAnswered
-                                : null
+                              ? styles.gridTextAnswered
+                              : null
                           ]}
                         >
                           {cell.letter.toUpperCase()}
@@ -1073,6 +1074,7 @@ export default class App extends React.Component {
           </View>
         );
       case "Game3":
+      case "Game3Answers":
         return (
           <View style={styles.screen}>
             <View style={styles.header}>
@@ -1118,7 +1120,8 @@ export default class App extends React.Component {
                     <ListItem
                       key={k}
                       onPress={
-                        this.state.actualQuestion === 0
+                        this.state.actualQuestion === 0 ||
+                        this.state.screen === "Game3Answers"
                           ? () => {}
                           : () => {
                               this.selectAnswer(
@@ -1133,7 +1136,9 @@ export default class App extends React.Component {
                     >
                       <CheckBox
                         checked={
-                          (i.correct && this.state.actualQuestion === 0) ||
+                          (i.correct &&
+                            (this.state.actualQuestion === 0 ||
+                              this.state.screen === "Game3Answers")) ||
                           (typeof this.state.answers[
                             this.state.questionOrder[
                               this.state.actualQuestion - 1
@@ -1148,6 +1153,23 @@ export default class App extends React.Component {
                         }
                         color={
                           this.state.actualQuestion === 0
+                            ? "#000000"
+                            : this.state.screen === "Game3Answers" && i.correct
+                            ? "#136F35"
+                            : this.state.screen === "Game3Answers" &&
+                              typeof this.state.answers[
+                                this.state.questionOrder[
+                                  this.state.actualQuestion - 1
+                                ]
+                              ] !== "undefined" &&
+                              this.state.answers[
+                                this.state.questionOrder[
+                                  this.state.actualQuestion - 1
+                                ]
+                              ] ===
+                                i.id - 1
+                            ? "#FF0000"
+                            : this.state.screen === "Game3Answers"
                             ? "#000000"
                             : "#78CBF5"
                         }
@@ -1173,8 +1195,12 @@ export default class App extends React.Component {
               </ScrollView>
             </View>
             <View style={styles.footer}>
-              {this.state.actualQuestion > 0 &&
-              this.state.actualQuestion < questions.length ? (
+              {(this.state.screen !== "Game3Answers" &&
+                this.state.actualQuestion > 0 &&
+                this.state.actualQuestion < questions.length) ||
+              (this.state.screen === "Game3Answers" &&
+                this.state.actualQuestion > 1 &&
+                this.state.actualQuestion < questions.length) ? (
                 <Button
                   block
                   onPress={() => {
@@ -1221,7 +1247,16 @@ export default class App extends React.Component {
 
                           this.setState({ currentPoints: totalPoints });
 
-                          this.updateScreen("Points");
+                          this.setState({
+                            pointsOptionFunction: () => {
+                              this.updateScreen("Game3Answers");
+                            }
+                          });
+                          this.setState({
+                            pointsOptionLabel: "REVISAR RESPOSTAS"
+                          });
+
+                          this.updateScreen("PointsWithOption");
                         }
                       : () => {
                           this.setState(previousState => {
@@ -1236,7 +1271,12 @@ export default class App extends React.Component {
                     !this.questionsAnswereds()
                       ? styles.buttonDisabled
                       : styles.button,
-                    this.state.actualQuestion > 0 ? styles.twoButtonsLeft : null
+                    (this.state.screen === "Game3Answers" &&
+                      this.state.actualQuestion > 1) ||
+                    (this.state.screen !== "Game3Answers" &&
+                      this.state.actualQuestion > 0)
+                      ? styles.twoButtonsLeft
+                      : null
                   ]}
                 >
                   {this.state.actualQuestion === questions.length - 1 ? (
@@ -1656,6 +1696,8 @@ export default class App extends React.Component {
           ).sort(() => Math.random() - 0.5)
         });
         break;
+      case "Game3Answers":
+        this.setState({ actualQuestion: 1 });
       case "Points":
       case "PointsWithOption":
         this.playAnimation("star");
@@ -2403,7 +2445,7 @@ const themes = [
         ],
         terms: [
           "alemão",
-          "Teoria da Reatividade Especial",
+          "Teoria da Relatividade Especial",
           "inercial",
           "mesma",
           "constância"
