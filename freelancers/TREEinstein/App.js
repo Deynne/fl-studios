@@ -547,7 +547,7 @@ export default class App extends React.Component {
                   onPress={() => {
                     Alert.alert(
                       "Créditos",
-                      "Idealização:\n- Geogenes Melo de Lima\n\nDesenvolvimento:\n- FL Studios\n- Fabiano Carneiro de Oliveira\n- Geogenes Melo de Lima\n\nContato:\n- fabiano.lothor@gmail.com\n- georgenesmelo@yahoo.com.br\n\n© 2018",
+                      "Idealização:\n- Geogenes Melo de Lima\n\nDesenvolvimento:\n- FL Studios\n- Fabiano Carneiro de Oliveira\n\nContato:\n- fabiano.lothor@gmail.com\n- georgenesmelo@yahoo.com.br\n\n© 2018",
                       [{ text: "OK" }],
                       { cancelable: true }
                     );

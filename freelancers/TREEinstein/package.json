@@ -1,10 +1,10 @@
 {
   "name": "treeinstein",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "private": true,
   "devDependencies": {
     "react-native-scripts": "1.14.0",
-    "jest-expo": "~28.0.0",
+    "jest-expo": "~32.0.0",
     "react-test-renderer": "16.3.1"
   },
   "main": "./node_modules/react-native-scripts/build/bin/crna-entry.js",
@@ -19,11 +19,15 @@
     "preset": "jest-expo"
   },
   "dependencies": {
+    "@expo/vector-icons": "^8.1.0",
+    "@unimodules/core": "^1.0.0",
+    "@unimodules/react-native-adapter": "^1.0.2",
     "create-react-class": "^15.6.3",
-    "expo": "^28.0.1",
+    "expo": "^32.0.0",
+    "expo-constants": "^4.0.0",
     "native-base": "^2.8.1",
-    "react": "16.3.1",
-    "react-native": "~0.55.2",
+    "react": "16.5.0",
+    "react-native": "https://github.com/expo/react-native/archive/sdk-32.0.0.tar.gz",
     "react-native-bgimage": "^1.4.0",
     "react-native-fab": "^1.0.8"
   }
