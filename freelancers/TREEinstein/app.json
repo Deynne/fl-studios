@@ -3,17 +3,29 @@
     "name": "TRE Einstein",
     "description": "Aplicativo Educacional",
     "icon": "./assets/images/app-icon.png",
-    "version": "3.0.1",
+    "version": "4.0.0",
     "ios": {
-      "bundleIdentifier": "br.com.fabianolothor.treeinstein"
+      "bundleIdentifier": "br.com.fabianolothor.treeinstein",
+      "supportsTablet": true
     },
     "android": {
       "package": "br.com.fabianolothor.treeinstein",
-      "versionCode": 9
+      "versionCode": 10
     },
     "sdkVersion": "32.0.0",
     "packagerOpts": {
       "nonPersistent": "--nonPersistent"
-    }
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "splash": {
+      "backgroundColor": "#FFFFFF",
+      "image": "./assets/images/app-icon.png",
+      "resizeMode": "contain"
+    },
+    "slug": "treeinstein",
+    "platforms": ["ios", "android"],
+    "assetBundlePatterns": ["**/*"]
   }
 }

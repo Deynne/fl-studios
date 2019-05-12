@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "android": {
+      "package": "br.com.fabianolothor.newtreeinstein",
+      "versionCode": 10
+    },
+    "assetBundlePatterns": ["**/**"],
+    "description": "Aplicativo Educacional",
+    "icon": "./assets/images/app-icon.png",
+    "ios": {
+      "bundleIdentifier": "br.com.fabianolothor.newtreeinstein",
+      "supportsTablet": true
+    },
+    "name": "TRE Einstein",
+    "platforms": ["ios", "android"],
+    "privacy": "public",
+    "sdkVersion": "32.0.0",
+    "slug": "newtreeinstein",
+    "splash": {
+      "backgroundColor": "#FFFFFF",
+      "image": "./assets/images/app-icon.png",
+      "resizeMode": "contain"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "version": "4.0.0"
+  }
+}
