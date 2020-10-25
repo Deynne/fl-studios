@@ -23,7 +23,7 @@ import {
   Item,
   ListItem
 } from "native-base";
-import { DangerZone, Font, ImagePicker } from "expo";
+import { DangerZone, Font, ImagePicker, ScreenOrientation } from "expo";
 import { Entypo, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
 import React from "react";
@@ -1016,8 +1016,8 @@ export default class App extends React.Component {
                           <Button
                             disabled={i.answered}
                             onPress={() => {
-                              Expo.ScreenOrientation.allowAsync(
-                                Expo.ScreenOrientation.Orientation.LANDSCAPE
+                              ScreenOrientation.lockAsync(
+                                ScreenOrientation.OrientationLock.LANDSCAPE
                               );
 
                               this.setState({ showGrid: true });
@@ -1639,7 +1639,7 @@ export default class App extends React.Component {
         }
         break;
       case "Menu":
-        Expo.ScreenOrientation.allowAsync(Expo.ScreenOrientation.Orientation.ALL);
+        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.ALL);
 
         this.loadDBKeys();
 
@@ -1677,7 +1677,7 @@ export default class App extends React.Component {
         break;
       case "Game2":
       case "Game2Back":
-        Expo.ScreenOrientation.allowAsync(Expo.ScreenOrientation.Orientation.ALL);
+        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.ALL);
 
         this.setState({ showGrid: false });
         this.setState({
